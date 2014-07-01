@@ -10,7 +10,7 @@ char *cliCommands[5] = {
 
 int main(int argc, char **argv) {
 
-	int inputFD = clientInputCheck(argc, argv);
+	//int inputFD = clientInputCheck(argc, argv);
 	int command = getLine (STDIN_FILENO, cliCommands);
 	Package *handler = NULL;
 	int test = open ("test1.txt", O_RDONLY);
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 
 /*
 void getLineA (int inputFD) {
-	char *strbuffer = malloc (256);	
+	char *strbuffer = malloc (256);
 	memset (strbuffer, 0, strlen (strbuffer));
 	int inputFile = 0;
 	int rVar = getLine (inputFile, strbuffer);
@@ -45,7 +45,7 @@ void initializeClient (Package *handler, int clientSock, int kPackages) {
 		temp = getStoredPackage (handler, DELIVERED);
 		temp->stato_articolo = TOBEDELIVERED;
 	//	if (temp != NULL)
-	//		pkg_print (temp);	
+	//		pkg_print (temp);
 	}
 
 }

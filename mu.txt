@@ -158,3 +158,80 @@ void foo_rele(struct foo *fp) /* release a reference to the object */
 		free (message);
     }
 }
+
+void pkg_print (Package *handler) {
+    if (handler != NULL) {
+    	
+		char *sepEQ = " = ";
+		char *sepComma = " , ";
+		char *sepCR = "\n";
+		char *message = malloc (256);
+		memset (message, 0, strlen (message));
+		char *status = malloc (26);
+		memset (status, 0, 26);
+		message = strcat (message, "Item");
+		
+
+		message = strcat (message, sepEQ);
+		message = strcat (message, handler->codice_articolo);
+		message = strcat (message, sepComma);
+		message = strcat (message, handler->descrizione_articolo);
+		message = strcat (message, sepComma);
+		message = strcat (message, handler->indirizzo_destinazione);
+
+
+
+		/*
+		switch (handler->stato_articolo) {
+			case STORAGE: status = "STORAGE"; break;
+			case TOBEDELIVERED: status = "TOBEDELIVERED"; break;
+			case DELIVERED: status = "DELIVERED"; break;							
+			case WITHDRAWN: status = "WITHDRAWN"; break;
+			default: status = "boh?"; break;
+		}
+		strcat (message, status);
+		strcat (message, "\n");
+		*/
+		write (STDOUT_FILENO, message, strlen (message));
+		write (STDOUT_FILENO, status, strlen (status));		
+		free (message);
+		free (status);
+    }
+}
+
+
+	void pkg_print (Package *handler) {
+    if (handler != NULL) {
+		char *sepEQ = " = ";
+		char *sepComma = " , ";
+		char *sepCR = "\n";
+		char *message = malloc (256);
+		char *status = malloc (14);
+		memset (status, '\0', 14);
+		memset (message, 0, strlen (message));
+		switch (handler->stato_articolo) {
+			case STORAGE: status 		= "STORAGE       "; break;
+			case TOBEDELIVERED: status 	= "TOBEDELIVERED "; break;
+			case DELIVERED: status 		= "DELIVERED     "; break;							
+			case WITHDRAWN: status 		= "WITHDRAWN     "; break;
+			default: status 			= "boh?          "; break;
+		}
+
+
+		strcat (message, "STATO: ");
+		strcat (message, status);
+		message = strcat (message, "Item");
+		strcat (message, sepEQ);
+		strcat (message, handler->codice_articolo);
+		strcat (message, sepComma);
+		strcat (message, handler->descrizione_articolo);
+		strcat (message, sepComma);
+		strcat (message, handler->indirizzo_destinazione);
+		strcat (message, sepComma);
+		strcat (message, "STATO: ");
+		strcat (message, status);
+		strcat (message, sepCR);		
+		write (STDOUT_FILENO, message, strlen (message));
+		free (message);
+    }
+}

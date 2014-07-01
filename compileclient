@@ -1,2 +1,0 @@
-#!/bin/sh
-clear && gcc client.c library.c -o client

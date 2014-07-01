@@ -1,0 +1,3 @@
+#!/bin/sh
+clear && gcc -pthread server.c library.c -g -o test
+gcc client.c library.c -g -o client

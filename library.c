@@ -41,29 +41,24 @@ void pkglist_print (Package *handler) {
     }
 }
 
-void pkg_print (Package *handler) {
+	void pkg_print (Package *handler) {
     if (handler != NULL) {
-    	
 		char *sepEQ = " = ";
 		char *sepComma = " , ";
 		char *sepCR = "\n";
 		char *message = malloc (256);
-		memset (message, 0, strlen (message));
 		char *status = malloc (14);
-		memset (status, 0, 14);
+		memset (status, '\0', 14);
+		memset (message, 0, strlen (message));
 		message = strcat (message, "Item");
-		/*
-
 		strcat (message, sepEQ);
 		strcat (message, handler->codice_articolo);
 		strcat (message, sepComma);
 		strcat (message, handler->descrizione_articolo);
 		strcat (message, sepComma);
 		strcat (message, handler->indirizzo_destinazione);
-		strcat (message, sepCR);
-
-
-		*/
+		strcat (message, sepComma);
+		strcat (message, "STATO: ");
 		switch (handler->stato_articolo) {
 			case STORAGE: status = "STORAGE"; break;
 			case TOBEDELIVERED: status = "TOBEDELIVERED"; break;
@@ -72,10 +67,9 @@ void pkg_print (Package *handler) {
 			default: status = "boh?"; break;
 		}
 		strcat (message, status);
-		strcat (message, "\n");
-
+		strcat (message, sepCR);		
 		write (STDOUT_FILENO, message, strlen (message));
-		free (message);		
+		free (message);
     }
 }
 
@@ -204,8 +198,6 @@ funzione che prende in input l'handler della lista, il file di testo, il
 Package * createList(Package *handler, int inputFile, int tokensNumber) {
 	char *string[tokensNumber];
 	int i = 0;
-	int rVar = 1;
-	int wVar;
 
 	for (; i < tokensNumber; i++) {
 		string[i] = (char *) malloc (256);
@@ -215,7 +207,7 @@ Package * createList(Package *handler, int inputFile, int tokensNumber) {
 	char *strbuffer = malloc (256);	
 	memset (strbuffer, 0, strlen (strbuffer));
 
-	while ( (rVar = readLine (inputFile, strbuffer))> 0 ) {
+	while ( (readLine (inputFile, strbuffer))> 0 ) {
 /*
 		output per debug
 		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
@@ -256,10 +248,11 @@ che il file non sia terminato.
 */
 int readLine (int inputFileDes, char *strbuffer) {
 
-	int	i 	 = 0;
-	int rVar = 1;
+	int	i = 0;
 	char c;
-	while ((rVar = read (inputFileDes, &c, 1)) > 0 && c != '\n') {
+	while ((read (inputFileDes, &c, 1)) > 0 && (c != '\n') ) {
+		if (c == '\r')
+			c = '\0';
 		strbuffer[i++] = c;
 	}
 	strbuffer[i] = '\0';	
@@ -303,6 +296,7 @@ char *getToken (char *result, char *input, char terminal, int stepup) {
 	while (input[i] != terminal) {
 		result[i] = input[i++];
 	}
+
 	if (stepup == 1) 
 		input++;
 	return input+i;
@@ -473,6 +467,7 @@ void commandSwitch (int command, Package *handler) {
 	switch (command) {
 
 		case ELENCASERVER:
+		/*ELENCA STAMPA LA LISTA REMOTA*/
 			write (STDOUT_FILENO, "elencaserver\n", strlen ("elencaserver\n"));
 		break;
 		case CONSEGNATO:
@@ -485,6 +480,7 @@ void commandSwitch (int command, Package *handler) {
 			write (STDOUT_FILENO, "smista\n", strlen ("smista\n"));
 		break;
 		case ELENCA:
+		/*ELENCA STAMPA LA LISTA LOCALE*/
 			write (STDOUT_FILENO, "elenca:\n", strlen ("elenca:\n"));
 			pkglist_print (handler);
 		break;						
@@ -506,13 +502,13 @@ int commandToHash (char *command, char **cliCommands) {
 
 void getCommand (char *string, const char *strbuffer) {
 	int i = 0;
-	while (strbuffer[i] != '\0') {
-		if (strbuffer[i] == '#')
+	while (strbuffer[i] != '\0' && strbuffer[i] != '\n' && strbuffer[i] != '#') {
+		if (strbuffer[i] == '#' || strbuffer[i] == '\n')
 			string[i] = '\0';
 		else
 			string[i] = strbuffer[i++];
 	}
-	i--;
+	
 }
 int getLine (int inputFD, char **cliCommands) {
 
@@ -527,8 +523,8 @@ int getLine (int inputFD, char **cliCommands) {
 	if ( (rVar = readLine (inputFD, strbuffer))> 0 ) {
 
 		//output per debug
-		//write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
-		//write (STDOUT_FILENO, "\n", 1);
+		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
+		write (STDOUT_FILENO, "\n", 1);
 		
 		getCommand (string, strbuffer);
 		command = commandToHash (string, cliCommands);
