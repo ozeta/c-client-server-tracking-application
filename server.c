@@ -23,14 +23,18 @@ int main(int argc , char *argv[])
 	Package *handler	= NULL;
 	//scrivi funzione createList
     int tokensNumber = 3;
-	int listFD = createList(handler, inputFD, tokensNumber);
+	handler = (Package *)createList (handler, inputFD, tokensNumber);
+    pkglist_print (handler);
+    //initializeClient (handler, 0, kPackages); 
+    //return temporaneo
 	return 0;
     int sockfd , client_sock , clientsize;
     struct sockaddr_in *server , client;
 	//porta tcp random nel range assegnato da IANA per l'utente
+    srand (time(NULL));
 	int port = randomIntGenerator (1024, 49150);
 	sockfd = InitSocket (server,port,operatorsNumber);
-	
+
 	//
 	clientsize = sizeof(struct sockaddr_in);
 	pthread_t thread_id;

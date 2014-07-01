@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 /*system call base*/
 #include <unistd.h>
 /*definizioni usate dalle system call*/
@@ -25,24 +26,47 @@
 
 typedef enum statoarticoloT {
 
-	STORAGE, //magazzino
-	TOBEDELIVERED, //da consegnare
-	DELIVERED, // consegnato
-	WITHDRAWN // ritirato
+	STORAGE			= 0,	// magazzino
+	TOBEDELIVERED	= 1,	// da consegnare
+	DELIVERED		= 2,	// consegnato
+	WITHDRAWN		= 3 	// ritirato
 
-} status;
+} Status;
+
+typedef enum commandHashTable {
+
+	ELENCASERVER 	= 0,	
+	CONSEGNATO 		= 1,
+	RITIRATO		= 2,	
+	SMISTA			= 3,
+	ELENCA 			= 4
+
+} Hash;
+
+
 
 typedef struct PKG {
 
 	char codice_articolo[32];
 	char descrizione_articolo[256];
 	char indirizzo_destinazione[256];
-	status stato_articolo;
-	pthread_mutex_t sem;
+	Status stato_articolo;
+	pthread_mutex_t m_lock;
 	struct PKG *next;
 } Package;
 
+Package * 	createList(Package *handler, int inputFile, int tokensNumber);
+int 		readLine (int inputFile, char *strbuffer);
+void 		getTokens (char *string[], char *strbuffer);
+char 	* 	getToken (char *result, char *input, char separator, int stepup);
 
 
+void pkglist_print (Package *handler);
+
+void pkg_print (Package *handler);
+
+Package * getStoredPackage (Package *, Status);
 
 #endif
+
+

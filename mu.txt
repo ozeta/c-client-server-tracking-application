@@ -1,0 +1,160 @@
+/*
+
+struct foo { 
+	int f_count; 
+	pthread_mutex_t f_lock; 
+	/* ... more stuff here ... */ 
+}; 
+struct foo * foo_alloc(void) /* allocate the object */ 
+{ 		
+	struct foo *fp; 
+	if ((fp = malloc(sizeof(struct foo))) != NULL) { 
+		fp->f_count = 1; 
+		if (pthread_mutex_init(&fp->f_lock, NULL) != 0) { 
+		free(fp); 
+		return(NULL); 
+		} 
+		/* ... continue initialization ... */ 
+	} 
+	return(fp); 
+} 
+void foo_hold(struct foo *fp) /* add a reference to the object */ 
+{ 
+	pthread_mutex_lock(&fp->f_lock); 
+	fp->f_count++; 
+	pthread_mutex_unlock(&fp->f_lock); 
+} 
+void foo_rele(struct foo *fp) /* release a reference to the object */
+{ 
+	pthread_mutex_lock(&fp->f_lock); 
+	if (--fp->f_count == 0) { /* last reference */ 
+		pthread_mutex_unlock(&fp->f_lock); 
+		pthread_mutex_destroy(&fp->f_lock); 
+		free(fp); 
+	} else { 
+		pthread_mutex_unlock(&fp->f_lock); 
+	} 
+}
+
+	/*====================================================*/
+
+	/* llist.c */	
+		
+	#include "llist.h";	
+		
+	/* Right now, this routine simply ensures that we don't initialize a list	
+	   that has data on it. */	
+		
+	int llist_init(llist_t *llistp)	
+	{	
+	   if (*llistp == NULL)	
+	          return 0;	
+	   else	
+	          return -1;	
+	}	
+		
+	int llist_insert_data(int index, void *datap, llist_t *llistp)	
+	{	
+	   llist_node_t *cur, *prev, *new;	
+	   int found = FALSE;	
+		
+	   for (cur = prev = *llistp; cur != NULL; prev = cur, cur= cur->nextp) {	
+	          if (cur->index == index) {	
+	                    free(cur->datap);	
+	                    cur->datap = datap;	
+	                    found = TRUE;	
+	                    break;	
+	          } else if (cur->index > index) {	
+	                    break;	
+	          }	
+	   }	
+		
+	   if (!found) {	
+			new = (llist_node_t *)malloc(sizeof(llist_node_t));	
+			new->index = index;	
+			new->data = datap;	
+			new->nextp = cur;	
+			if (cur == list)	
+			       *llistp = new;	
+			else	
+			         prev->nextp = new;	
+	   }	
+		
+	   return 0;	
+	}
+
+	/*====================================================*/
+
+		int llist_init(llist_t *llistp)	
+	{	
+		
+	  llistp->first = NULL;	
+	  pthread_mutex_init(&(llistp->mutex), NULL);	
+	  return 0;	
+	}	
+		
+	int llist_insert_data(int index, void *datap, llist_t *llistp)	
+	{	
+	   llist_node_t *cur, *prev, *new;	
+	   int found = FALSE;	
+		
+	   pthread_mutex_lock(&(llistp->mutex));	
+		
+	   for (cur = prev = llistp->first; cur != NULL; prev = cur, cur= cur->nextp) {	
+	          if (cur->index == index) {	
+	                    free(cur->datap);	
+	                    cur->datap = datap;	
+	                    found = TRUE;	
+	                    break;	
+	          } else if (cur->index > index) {	
+		
+	                      break;	
+	          }	
+	   }	
+		
+	   if (!found) {	
+	          new = (llist_node_t *)malloc(sizeof(llist_node_t));	
+	          new->index = index;	
+	          new->data = datap;	
+	          new->nextp = cur;	
+	          if (cur == llistp->first)	
+	                    llistp->first = new;	
+	          else prev->nextp = new;	
+	   }	
+		
+	   pthread_mutex_unlock(&(llistp->mutex));	
+		
+	   return 0;	
+	}
+
+	void pkg_print (Package *handler) {
+    if (handler != NULL) {
+		char *sepEQ = " = ";
+		char *sepComma = " , ";
+		char *sepCR = "\n";
+		char *message = malloc (256);
+		char *status = malloc (14);
+		memset (status, '\0', 14);
+		memset (message, 0, strlen (message));
+		message = strcat (message, "Item");
+		strcat (message, sepEQ);
+		strcat (message, handler->codice_articolo);
+		strcat (message, sepComma);
+		strcat (message, handler->descrizione_articolo);
+		strcat (message, sepComma);
+		strcat (message, handler->indirizzo_destinazione);
+		strcat (message, sepComma);
+		//strcat (message, "STATO: ");
+		switch (handler->stato_articolo) {
+			case STORAGE: status = "STORAGE"; break;
+			case TOBEDELIVERED: status = "TOBEDELIVERED"; break;
+			case DELIVERED: status = "DELIVERED"; break;							
+			case WITHDRAWN: status = "WITHDRAWN"; break;
+			default: status = "boh?"; break;
+		}
+		//strcat (message, status);
+		strcat (message, sepCR);		
+		write (STDOUT_FILENO, message, strlen (message));
+		free (message);
+    }
+}

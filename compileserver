@@ -1,0 +1,2 @@
+#!/bin/sh
+clear && gcc -pthread server.c library.c -o test
