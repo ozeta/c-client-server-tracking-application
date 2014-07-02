@@ -149,7 +149,7 @@ void foo_rele(struct foo *fp) /* release a reference to the object */
 			case STORAGE: status = "STORAGE"; break;
 			case TOBEDELIVERED: status = "TOBEDELIVERED"; break;
 			case DELIVERED: status = "DELIVERED"; break;							
-			case WITHDRAWN: status = "WITHDRAWN"; break;
+			case COLLECTED: status = "COLLECTED"; break;
 			default: status = "boh?"; break;
 		}
 		//strcat (message, status);
@@ -186,7 +186,7 @@ void pkg_print (Package *handler) {
 			case STORAGE: status = "STORAGE"; break;
 			case TOBEDELIVERED: status = "TOBEDELIVERED"; break;
 			case DELIVERED: status = "DELIVERED"; break;							
-			case WITHDRAWN: status = "WITHDRAWN"; break;
+			case COLLECTED: status = "COLLECTED"; break;
 			default: status = "boh?"; break;
 		}
 		strcat (message, status);
@@ -213,7 +213,7 @@ void pkg_print (Package *handler) {
 			case STORAGE: status 		= "STORAGE       "; break;
 			case TOBEDELIVERED: status 	= "TOBEDELIVERED "; break;
 			case DELIVERED: status 		= "DELIVERED     "; break;							
-			case WITHDRAWN: status 		= "WITHDRAWN     "; break;
+			case COLLECTED: status 		= "COLLECTED     "; break;
 			default: status 			= "boh?          "; break;
 		}
 

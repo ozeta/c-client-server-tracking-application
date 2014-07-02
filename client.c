@@ -10,10 +10,12 @@ char *cliCommands[5] = {
 
 int main(int argc, char **argv) {
 
-	//int inputFD = clientInputCheck(argc, argv);
+	clientInputCheck(argc, argv);
+	int sockfd = connectToServer (argv);
 	int command = getLine (STDIN_FILENO, cliCommands);
 	Package *handler = NULL;
-	int test = open ("test1.txt", O_RDONLY);
+	
+	int test = open ("test.txt", O_RDONLY);
 	handler = (Package *)createList (handler, test, 3);
 	commandSwitch (command, handler);
 
@@ -24,8 +26,6 @@ int main(int argc, char **argv) {
 	//switcho sui 5 casi possibili
 	return 0;
 }
-
-
 
 /*
 void getLineA (int inputFD) {

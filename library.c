@@ -41,7 +41,7 @@ void pkglist_print (Package *handler) {
     }
 }
 
-	void pkg_print (Package *handler) {
+void pkg_print (Package *handler) {
     if (handler != NULL) {
 		char *sepEQ = " = ";
 		char *sepComma = " , ";
@@ -63,7 +63,7 @@ void pkglist_print (Package *handler) {
 			case STORAGE: status = "STORAGE"; break;
 			case TOBEDELIVERED: status = "TOBEDELIVERED"; break;
 			case DELIVERED: status = "DELIVERED"; break;							
-			case WITHDRAWN: status = "WITHDRAWN"; break;
+			case COLLECTED: status = "COLLECTED"; break;
 			default: status = "boh?"; break;
 		}
 		strcat (message, status);
@@ -251,8 +251,8 @@ int readLine (int inputFileDes, char *strbuffer) {
 	int	i = 0;
 	char c;
 	while ((read (inputFileDes, &c, 1)) > 0 && (c != '\n') ) {
-		if (c == '\r')
-			c = '\0';
+		//if (c == '\r')
+		//	c = '\0';
 		strbuffer[i++] = c;
 	}
 	strbuffer[i] = '\0';	
@@ -271,13 +271,11 @@ void getTokens (char *string[], char *strbuffer) {
 	int numString = 0;
 	int k = 0;
 
-
 	strbuffer = getToken (string[0], strbuffer, '#', 1);
 	//strbuffer++;
 	strbuffer = getToken (string[1], strbuffer, '#', 1);
 	//strbuffer++;
 	getToken (string[2], strbuffer, '\0', 0);		
-
 }
 /**
 la funzione prende in ingresso il puntatore all'array in cui scrivera' la stringa,
@@ -428,7 +426,7 @@ int isPortValid (char *argument, int inf, int sup) {
 	return res;
 }
 
-int clientInputCheck (int argc, char **argv) {
+void clientInputCheck (int argc, char **argv) {
 	char argv_err0[] 	= "e' necessario inserire: indirizzo IPv4 valido; numero di Porta\n";
 	if (argv[1] == NULL || argv[2] == NULL) {
 		write (STDERR_FILENO, argv_err0, strlen(argv_err0));
@@ -451,7 +449,6 @@ int clientInputCheck (int argc, char **argv) {
 		exit(-1);
 	}
 
-	return test;
 }
 
 
@@ -491,6 +488,7 @@ void commandSwitch (int command, Package *handler) {
 
 
 }
+
 int commandToHash (char *command, char **cliCommands) {
 	int i = 0;
 	int k = 0;
@@ -594,3 +592,39 @@ int InitSocket (struct sockaddr_in *server, int port, int operatorsNumber) {
 }
 
 /*=========================================================*/
+
+
+int connectToServer (char **argv) {
+
+	char *address;
+    struct addrinfo hints, *res;
+    memset (&hints, 0, sizeof (hints));
+    char *mess00 = "ip agganciato...\n";
+    char *mess01 = "socket creato...\n";
+    char *mess02 = "connessione eseguita.\n";
+    char *mess03 = "impossibile connettersi.\n";
+    hints.ai_family     = AF_INET; //protocollo ipv4
+    hints.ai_socktype   = SOCK_STREAM; //tcp
+    hints.ai_flags      = AI_PASSIVE; //INADDR_ANY
+    int sockfd;
+    if (getaddrinfo (argv[1], argv[2], &hints, &res) == -1)
+        perror ("Error1: "), exit (-1);
+    write (STDOUT_FILENO, mess00, strlen (mess00));
+	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (sockfd == -1)
+		perror ("Error2: "), exit (-1);
+    write (STDOUT_FILENO, mess01, strlen (mess01));
+
+
+    int bindErr;
+    int timeout = 12;
+	while ((connect (sockfd, res->ai_addr, res->ai_addrlen) < 0) && timeout > 0) {
+		perror ("connect >  Nuovo tentativo di connessione tra 5 secondi"), sleep (5);
+    	timeout++;
+    } 
+    if (timeout == 0)
+    	write (STDERR_FILENO, mess03, strlen (mess03)), exit (-1);
+    
+    write (STDOUT_FILENO, mess02, strlen (mess02));
+	return sockfd;
+}

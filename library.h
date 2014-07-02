@@ -29,7 +29,7 @@ typedef enum statoarticoloT {
 	STORAGE			= 0,	// magazzino
 	TOBEDELIVERED	= 1,	// da consegnare
 	DELIVERED		= 2,	// consegnato
-	WITHDRAWN		= 3 	// ritirato
+	COLLECTED		= 3 	// ritirato
 
 } Status;
 
