@@ -1,0 +1,250 @@
+/**
+void pkglist_print (Package *handler)
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+
+Valore restituito:
+•	Funzione Void
+
+Funzione ricorsiva per la stampa della Lista, che prende in input
+l'handler della lista, e stampa tutte le righe attraverso la 
+chiamata alla funzione: “  void pkg_print (Package *handler) ”
+*/
+
+/**
+void pkg_print (Package *handler)
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+
+Valore restituito:
+•	Funzione Void
+
+Funzione stampa riga, che prende in input l'handler della lista, controlla che non
+sia NULL.
+Dichiara alcuni separatori ed alloca spazio per la stringa “message”.
+Attraverso l’utilizzo della strcat compone la stringa “ message”  con i separatori
+dichiarati  e i campi “codice_articolo”,  “descrizione_articolo” ,  
+“ indirizzo_destinazione” e "stato_articolo"
+Il risultato sarà una stringa del tipo: 
+“Item = codice_articolo, descrizione_articolo, indirizzo_destinazione, STATO: stato_articolo ”
+*/
+
+
+
+
+/**
+Package * pkg_initialize(char *buffer0, char *buffer1, char *buffer2)
+Parametri in ingresso:
+•	Tre stringhe (char *buffer0, char *buffer1, char *buffer2)
+
+Valore restituito:
+•	Nuovo nodo della  lista di oggetti Package
+
+Funzione di inizializzazione di un nuovo nodo di tipo Package,  che prende
+in input tre stringhe.
+Dichiara le stringhe err00 e err01 per gli errori
+Alloca spazio per un nuovo nodo della lista oggetti Package.
+Esegue un controllo sulla locazione di memoria ed sul mutex ed in caso 
+di errore stampa gli errori definiti precedentemente. 
+Poi attraverso strcpy copia il contenuto delle tre stringhe nei relativi campi
+del nodo ed inizializza il campo stato  a “STORAGE”.
+*/
+
+/**
+Package * pkg_enqueue (Package * handler, char *buffer0, char *buffer1, char *buffer2)
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+•	Tre stringhe (char *buffer0, char *buffer1, char *buffer2)
+
+Valore restituito:
+•	Puntatore alla nuova  lista di oggetti Package
+
+Funzione  ricorsiva di inserimento in coda che prende in input l'handler 
+della lista e tre stringhe. 
+Dichiara un nuovo nodo della struttura  Package  che viene inizializzato 
+dalla funzione “ pkg_initialize (buffer0, buffer1, buffer2)” 
+In modo ricorsivo scorre la lista ed inserisce in coda il nuovo nodo
+*/
+
+
+/**
+Package * pkg_push (Package * handler, char *buffer0, char *buffer1, char *buffer2)
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+•	Tre stringhe (char *buffer0, char *buffer1, char *buffer2)
+Valore restituito:
+•	Puntatore alla nuova  lista di oggetti Package
+
+Funzione di inserimento in testa, che prende in input l'handler della
+lista e tre stringhe.
+Dichiara un nuovo nodo della struttura  Package  che viene inizializzato 
+dalla funzione “ pkg_initialize (buffer0, buffer1, buffer2)” 
+Successivamente inserisce in testa  il nuovo nodo
+*/
+
+
+/**
+Package * pkg_delete (Package * handler, char *buffer0)
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+•	Una stringa (char *buffer0)
+Valore restituito:
+•	Puntatore alla nuova  lista di oggetti Package
+
+Funzione  ricorsiva di cancellazione di un elemento dalla lista, che prende
+in input l'handler della lista e una stringa.
+Attraverso l’utilizzo di strcmp confronta la stringa passata come parametro 
+con il campo codice_articolo dei vari nodi della lista di oggetti Package
+quando il campo codice_articolo risulta uguale si elimina quel nodo
+*/
+
+
+/**
+void list_delete (Package * handler)
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+
+Valore restituito:
+•	Funzione *Void
+
+Funzione  ricorsiva di cancellazione lista che prende in input l'handler 
+della lista.
+Esegue l’eliminazione di tutti gli oggetti della lista. 
+*/
+
+/**
+Package * pkg_find (Package * handler, char *input)
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+•	Una stringa (char *input)
+
+Valore restituito:
+•	Nodo cercato di tipo Package
+
+Funzione  ricorsiva di ricerca basata su codice articolo, che prende in input
+l'handler della lista e una stringa.
+Dichiara un nuovo nodo per memorizzare le informazioni del nodo cercato.
+Attraverso l’utilizzo di strcmp confronta la stringa passata come parametro 
+con il campo codice_articolo dei vari nodi della lista di oggetti Package.
+quando il campo codice_articolo risulta uguale si copia il contenuto nel nuovo nodo
+*/
+
+
+
+
+
+/**
+Package * getStoredPackage (Package * handler, Status input)
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+•	input di tipo Status 
+
+Valore restituito:
+•	Nodo cercato di tipo Package
+
+Funzione  ricorsiva di ricerca basata sullo stato di magazzino dell'articolo, 
+che prende in input l'handler della lista e il parametro “input” di tipo Status. 
+Dichiara un nuovo nodo per memorizzare le informazioni del nodo cercato.
+Confronta  “input” di tipo Status passato come parametro con il campo 
+stato_articolo  dei vari nodi della lista di oggetti Package.
+Quando il campo stato_articolo  risulta uguale si inizializza il contenuto del 
+nuovo nodo con il nodo trovato
+*/
+
+/**
+
+
+/**
+
+Package * createList(Package *handler, int inputFile, int tokensNumber)
+
+Parametri in ingresso:
+•	Puntatore alla lista di oggetti Package
+•	il FileDescriptor 
+•	il numero di tokens  
+
+Valore restituito:
+•	Puntatore alla lista di oggetti Package
+
+Funzione per la creazione e riempimento della struttura lista, che prende in 
+input l'handler della lista, il file di testo, il numero di token da analizzare.
+La funzione alloca lo spazio per un numero sufficiente di stringhe temporanee
+dopodiché richiamando la funzione "int readLine (int inputFileDes, char *strbuffer)"
+inizia a leggere linea per linea il file di testo, salvando in strbuffer il contenuto
+della linea. 
+Successivamente attraverso la procedura "void getTokens (char *string[],char *strbuffer)"
+separa la stringa precedentemente ricevuta in tre stringhe.
+Infine richiama la funzione 
+"Package * pkg_push (Package * handler, char *buffer0, char *buffer1, char *buffer2)"  
+che inizializza un nuovo nodo della lista e lo inserisce in testa alla lista.
+Poi viene azzerato il contenuto delle stringhe di passaggio, e si
+passa alla riga successiva.
+Al termine, vengono liberate le stringhe temporanee.
+*/
+
+
+
+
+/**
+int readLine (int inputFileDes, char *strbuffer)
+
+Parametri in ingresso:
+•	il FileDescriptor 
+•	stringa puntata
+
+Valore restituito:
+•	un valore intero "i"
+
+
+Funzione per la lettura di una riga da file, che prende in ingresso il fileDescriptor
+del file di testo e una stringa puntata.
+Attraverso un ciclo while e l'utilizzo della "read" legge un carattere alla volta fino
+alla "\n", salvandolo nella stringa puntata passata come parametro. 
+La funzione restituisce il numero di lettere lette nella riga,
+questo valore servirà alla funzione chiamante per verificare che il file non sia terminato.
+*/
+
+
+
+/**
+void getTokens (char *string[], char *strbuffer) 
+
+Parametri in ingresso:
+•	Puntatore array stringhe 
+•	stringa puntata
+
+Valore restituito:
+•	Funzione *Void
+
+Procedura per separazione della riga letta da file in tre stringhe, che  prende in 
+ingresso il puntatore all'array di stringhe e il puntatore alla stringa temporanea.
+Per ogni stringa da riempire chiama la funzione: 
+" char *getToken (char *result, char *input, char terminal, int stepup) "
+
+*/
+
+/**
+char *getToken (char *result, char *input, char terminal, int stepup)
+
+Parametri in ingresso:
+•	Puntatore array stringhe 
+•	stringa puntata
+•	separatore 
+•	valore intero " stepup"
+
+Valore restituito:
+•	Puntatore stringa
+
+
+Funzione per la copia della riga fino al separatore in una stringa, che prende in 
+ingresso il puntatore all'array in cui scrivera' la stringa, la stringa di input, il
+separatore di linea e il valore intero "stepup".
+Viene copia carattere per carattere la stringa di ingresso nella stringa di
+uscita, fintanto che non viene raggiunto il carattere separatore.
+La funzione restituisce il puntatore al delimitatore, cioè all'ultimo carattere
+della sottostringa/stringa, nel caso che " stepup == 1", allora verrà restituito il 
+puntatore alla successiva cella di memoria, in modo da poter superare il carattere di 
+delimitazione e poter richiamare la stessa funzione sul resto della sottostringa.
+*/
+
+
