@@ -101,7 +101,7 @@ void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in clie
 			}
 
 		}
-		pthread_join (thread_id , NULL);
+
 		int err = pthread_mutex_lock (&maxThreadsMutex);
 
 		sprintf (tids, "threads correnti: [%d] \n", maxThread);
@@ -114,7 +114,10 @@ void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in clie
 	}
 
 
-
+	//pthread_join (thread_id , NULL);
+	while (1) {
+		sleep (1);
+	}	
 }
 
 /*

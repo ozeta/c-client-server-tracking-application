@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <signal.h>
 /*system call base*/
 #include <unistd.h>
 /*definizioni usate dalle system call*/

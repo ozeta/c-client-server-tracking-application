@@ -712,15 +712,18 @@ void *connection_handler (void *parametri) {
 	//sprintf (buff, "%d", (int) tid);
 	//write (STDOUT_FILENO, buff, strlen (buff));
 	//write (STDOUT_FILENO, "\n", 1);
+	signal(SIGPIPE,SIG_IGN);
 	int client_sock = *(int *)parametri;
 	int err0;
 	int i = 0;
-	while ( i < 10) {
+	while ( (err0 = send(client_sock, "A", 1, 0)) > 0) {
+
 		//write (STDOUT_FILENO, "working ", sizeof ("working "));		
 		//write (client_sock, "A", 1);
-		(err0 = write (client_sock, "A", 1));
+		//(err0 = write (client_sock, "A", 1));
 		//sleep (1);
-		i++;		
+		i++;			
+		sleep (1);		
 	}
 	perror ("socket client: ");
 	write (STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ("\nfine comunicazioni\n"));	
