@@ -23,7 +23,7 @@ int main (int argc , char *argv[]) {
 	int kPackages		= atoi (argv[2]);
 
 
-	int err = pthread_mutex_init(&maxThreadsMutex, NULL);
+	int err = pthread_mutex_init (&maxThreadsMutex, NULL);
 	if (err != 0) {
 		perror ("Impossibile allocare il mutex"), exit (-1);
 	}
@@ -52,7 +52,7 @@ int main (int argc , char *argv[]) {
 
 	connectionManager (sockfd, operatorsNumber, client, clientsize);
 
-
+	close (sockfd);
 	pthread_mutex_destroy(&maxThreadsMutex);
 	perror ("fine programma");
 	return 0;
@@ -60,8 +60,8 @@ int main (int argc , char *argv[]) {
 
 void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in client, int clientsize) {
 	
-	char 			tids[20];
-	int 			sock;
+	char 			tids[32];
+	int 			client_sock;
 	pthread_t 		thread_id;
 	int 			tid;
 	
@@ -73,45 +73,48 @@ void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in clie
 
 	//potrei aver bisogno di un array di sock ed un array di client.
 
-	while(1) {
+	while (1) {
 
 		if (maxThread < operatorsNumber ) {
-			sockfd = accept(sock, (struct sockaddr *)&client, (socklen_t*)&clientsize);
-			if ( sock != -1) {
+			client_sock = accept(sockfd, (struct sockaddr *)&client, (socklen_t*)&clientsize);
+			if ( client_sock != -1) {
 				write (STDOUT_FILENO, mess00, strlen (mess00));
-				int *sockfd = (int *) malloc (sizeof (int));
-				*sockfd = sock;
-				if( pthread_create (&thread_id , NULL ,  connection_handler , (void*) &sock) == 0) {
-					
+
+				if( pthread_create (&thread_id , NULL ,  connection_handler , (void*) &client_sock) == 0) {
 					sprintf  (tids, "nuovo tid: [%d] ", tid);
 					tid++;
+
 					if ( (pthread_mutex_lock (&maxThreadsMutex)) == 0) {
 						maxThread++;
 						pthread_mutex_unlock (&maxThreadsMutex);
 					} else
 						perror ("server-mutex:errore");
+
 					write (STDOUT_FILENO, tids, strlen (tids));	 
 					write (STDOUT_FILENO, mess01, strlen (mess01));
 				
 					//pthread_join (thread_id , NULL);
 				} else 
 					perror ("impossibile creare il thread");
-				free (sockfd);
 			} else {
 				perror ("impossibile accettare la connessione\n");
 			}
 
 		}
+		pthread_join (thread_id , NULL);
+		int err = pthread_mutex_lock (&maxThreadsMutex);
+
 		sprintf (tids, "threads correnti: [%d] \n", maxThread);
+		err = pthread_mutex_unlock (&maxThreadsMutex);
+		
 		write (STDOUT_FILENO, tids, strlen (tids));	
 		memset (tids, '\0', strlen (tids));
-		sleep (1);		
+	
+		
 	}
 
-	if (sock < 0)  {
-		perror ("chiamata Accept fallita");
-		exit (-1);
-	}
+
+
 }
 
 /*
@@ -124,10 +127,10 @@ void *connection_handlerA(void *sockfd) {
 	char *message , client_message[2000];
 
 	//messaggio di prova
-	message = "Greetings! I am your connection handler\n";
+	message = "connection handler\n";
 	write(sock , message , strlen(message));
 
-	message = "Now type something and i shall repeat what you type \n";
+	message = "messaggio:\n";
 	write(sock , message , strlen(message));
 
 	//ricezione messaggio

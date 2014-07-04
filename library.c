@@ -713,9 +713,14 @@ void *connection_handler (void *parametri) {
 	//write (STDOUT_FILENO, buff, strlen (buff));
 	//write (STDOUT_FILENO, "\n", 1);
 	int client_sock = *(int *)parametri;
-	while ((write (client_sock, "A", 1))  >= -1) {
+	int err0;
+	int i = 0;
+	while ( i < 10) {
 		//write (STDOUT_FILENO, "working ", sizeof ("working "));		
-		sleep (1);		
+		//write (client_sock, "A", 1);
+		(err0 = write (client_sock, "A", 1));
+		//sleep (1);
+		i++;		
 	}
 	perror ("socket client: ");
 	write (STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ("\nfine comunicazioni\n"));	

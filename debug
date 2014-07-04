@@ -1,0 +1,2 @@
+#!/bin/bash
+gdb --args test 2 2 test.txt

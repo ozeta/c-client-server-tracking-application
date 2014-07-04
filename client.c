@@ -12,13 +12,16 @@ int main(int argc, char **argv) {
 
 	clientInputCheck(argc, argv);
 	int sockfd = connectToServer (argv);
-	char buff[2];
-	while (1) {
-		sockfd = read (sockfd, buff, 1);
-		if (sockfd != -1)
-			write (STDOUT_FILENO, buff, 1);
-	}
+	char buff[5];
+	memset (buff, '\0', strlen(buff));
+	int rVar;
+	while ((rVar = read (sockfd, buff, 1)) != -1) {
 
+		write (STDOUT_FILENO, buff, 1);
+		memset (buff, '\0', strlen(buff)); 
+
+	}
+	/*
 	int command = getLine (STDIN_FILENO, cliCommands);
 	Package *handler = NULL;
 	
@@ -27,6 +30,7 @@ int main(int argc, char **argv) {
 	Status status = DELIVERED;
 	handler = (Package *) createList (handler, inputFD, tokensNumber, status);
 	commandSwitch (command, handler);
+	*/
 	close (sockfd);
 	//leggo da stdin
 	//estrapolo il primo token

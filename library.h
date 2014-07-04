@@ -65,7 +65,8 @@ typedef struct tmpStruct {
 pthread_mutex_t maxThreadsMutex;
 int				maxThread;
 
-void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in client, int clientsize);
+void 		connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in client, int clientsize);
+
 Package *	createList(Package *handler, int inputFile, int tokensNumber, Status status);
 int 		readLine (int inputFile, char *strbuffer);
 void		getTokens (char *string[], char *strbuffer, int tokensNumber);
