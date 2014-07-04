@@ -43,8 +43,6 @@ typedef enum commandHashTable {
 
 } Hash;
 
-
-
 typedef struct PKG {
 
 	char codice_articolo[32];
@@ -55,9 +53,22 @@ typedef struct PKG {
 	struct PKG *next;
 } Package;
 
-Package * 	createList(Package *handler, int inputFile, int tokensNumber);
+typedef struct tmpStruct {
+
+	int sockfd;
+	int kPackages;
+	Package *handler;
+
+
+} Passaggio;
+
+pthread_mutex_t maxThreadsMutex;
+int				maxThread;
+
+void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in client, int clientsize);
+Package *	createList(Package *handler, int inputFile, int tokensNumber, Status status);
 int 		readLine (int inputFile, char *strbuffer);
-void 		getTokens (char *string[], char *strbuffer);
+void		getTokens (char *string[], char *strbuffer, int tokensNumber);
 char 	* 	getToken (char *result, char *input, char separator, int stepup);
 
 

@@ -12,13 +12,22 @@ int main(int argc, char **argv) {
 
 	clientInputCheck(argc, argv);
 	int sockfd = connectToServer (argv);
+	char buff[2];
+	while (1) {
+		sockfd = read (sockfd, buff, 1);
+		if (sockfd != -1)
+			write (STDOUT_FILENO, buff, 1);
+	}
+
 	int command = getLine (STDIN_FILENO, cliCommands);
 	Package *handler = NULL;
 	
-	int test = open ("test.txt", O_RDONLY);
-	handler = (Package *)createList (handler, test, 3);
+	int inputFD = open ("test.txt", O_RDONLY);
+	int tokensNumber = 3;
+	Status status = DELIVERED;
+	handler = (Package *) createList (handler, inputFD, tokensNumber, status);
 	commandSwitch (command, handler);
-
+	close (sockfd);
 	//leggo da stdin
 	//estrapolo il primo token
 	//lo comparo con l'array client

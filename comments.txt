@@ -105,7 +105,7 @@ Parametri in ingresso:
 •	Puntatore alla lista di oggetti Package
 
 Valore restituito:
-•	Funzione *Void
+•	Funzione Void
 
 Funzione  ricorsiva di cancellazione lista che prende in input l'handler 
 della lista.
@@ -248,3 +248,85 @@ delimitazione e poter richiamare la stessa funzione sul resto della sottostringa
 */
 
 
+
+
+/*===========================================================================*/
+/*
+2) operazioni su input
+*/
+/*===========================================================================*/
+
+
+
+/**
+int checkArguments (char *argument, int argNum)
+
+Parametri in ingresso:
+•	Puntatore a char
+•	il numero (posizione) del parametro
+
+Valore restituito:
+•	un valore intero
+
+La Funzione controlla che i parametri siano valori inetri positivi, prende in 
+ingresso un puntatore a char e il numero (posizione) del parametro.
+Attraverso un "IF"  controlla che il parametro passato sia positivo.
+Successivamente attraverso un ciclo while controlla che il parametro passato 
+sia un numero.
+Nel caso di errori nei controlli, attraverso l'utilizzo della system call ERROR si
+notifica su standard error il messaggio di errore all'utente
+La funzione restituisce un valore intero positivo in caso di successo nei controlli e
+negativo nel caso di insuccesso
+*/
+
+
+/**
+int serverInputCheck (int argc, char **argv)
+
+Parametri in ingresso:
+•	il numero di parametri
+•	array di puntatori a char
+
+
+Valore restituito:
+•	il FileDescriptor
+
+Funzione di controllo parametri, che prende in ingresso il numero dei parametri e
+un array di puntatori a char " i vari parametri".
+Dichiara la stringa argv_err0[] per l'errore su numero di parametri inseriti.
+Controlla che i parametri siano dicersi da NULL.
+Successivamente controlla il valore di N " numero di operatori" e il valore di K
+" numero di oggetti da passare ad ogni client" attraverso la funzione : 
+" int checkArguments (char *argument, int argNum) "
+Infine se i controlli precedenti sono andati a buon fine si passa a controllare il 
+terzo parametro " il file di testo " attraverso la system call OPEN.
+Se anche il terzo controllo va buon fine, la funzione restituisce il FileDescriptor
+del file aperto in sola lettura.
+Nel caso di errore nel controllo, attraverso l'utilizzo della system call ERROR si
+notifica su standard error il messaggio di errore all'utente
+*/
+
+
+/**
+int randomIntGenerator (int inf, int sup)
+
+Parametri in ingresso:
+•	valore intero (limite inferiore)
+•	valore intero (limite superiore)
+
+Valore restituito:
+•	valore intero
+
+Funzione random, che prende in ingresso un valore intero (limite inferiore) e un secondo
+valore intero (limite superiore).
+Calcola un valore intero in modo random tra il limite inferiore e superiore
+La funzione ritorna il valore intero calcolato precedentemente.
+*/
+
+
+/*===========================================================================*/
+/*
+3) operazioni su clientinput
+	verifica input
+*/
+/*===========================================================================*/
