@@ -6,11 +6,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
-#include <signal.h>
 /*system call base*/
 #include <unistd.h>
 /*definizioni usate dalle system call*/
 #include <fcntl.h>
+/*libreria segnali*/
+#include <signal.h>
 /*gestione errori e messaggi di errore*/
 #include <errno.h>
 /* non necessarie ma richieste da alcune distribuzioni unix */
@@ -23,6 +24,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+
+int DEBUG; 
+//mutex per la gestione dei thread
+pthread_mutex_t maxThreadsMutex;
+pthread_mutex_t packageMutex;
+
+//variabile globale per la gestione dei thread
+int maxThread;
 
 
 typedef enum statoarticoloT {
@@ -63,10 +72,9 @@ typedef struct tmpStruct {
 
 } Passaggio;
 
-pthread_mutex_t maxThreadsMutex;
-int				maxThread;
 
-void 		connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in client, int clientsize);
+
+void connectionManager (int sockfd, int operatorsNumber, int kPackages, Package *handler, struct sockaddr_in client, int clientsize);
 
 Package *	createList(Package *handler, int inputFile, int tokensNumber, Status status);
 int 		readLine (int inputFile, char *strbuffer);

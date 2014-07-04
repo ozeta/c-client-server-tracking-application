@@ -157,17 +157,17 @@ void list_delete (Package * handler){
 
 
 /**funzione di ricerca base basata su codice articolo*/
-Package * pkg_find (Package * handler, char *input) {
+Package * pkg_find (Package * handler, char *pkgCode) {
 
 	Package * result = NULL;
 
-	//rettifica <= input
+	//rettifica <= pkgCode
 	if (handler != NULL) {
-		if (strcmp (input, handler->codice_articolo) == 0) {
+		if (strcmp (pkgCode, handler->codice_articolo) == 0) {
 			result = handler;
 
 		} else {
-			result = pkg_find (handler->next, input);
+			result = pkg_find (handler->next, pkgCode);
 		}
 
 	}
@@ -176,16 +176,16 @@ Package * pkg_find (Package * handler, char *input) {
 }
 
 /**funzione di ricerca basata sullo stato di magazzino dell'articolo*/
-Package * getStoredPackage (Package * handler, Status input) {
+Package * getStoredPackage (Package * handler, Status pkgCode) {
 
 	Package * result = NULL;
 
 	if (handler != NULL) {
-		if (handler->stato_articolo == input) {
+		if (handler->stato_articolo == pkgCode) {
 			result = handler;
 
 		} else {
-			result = getStoredPackage (handler->next, input);
+			result = getStoredPackage (handler->next, pkgCode);
 		}
 	}
 
@@ -206,9 +206,9 @@ funzione che prende in input l'handler della lista, il file di testo, il
 */
 Package * createList(Package *handler, int inputFile, int tokensNumber, Status status) {
 	char *string[tokensNumber];
-	int i = 0;
+	int i;
 
-	for (; i < tokensNumber; i++) {
+	for (i = 0; i < tokensNumber; i++) {
 		string[i] = (char *) malloc (256);
 		memset (string[i], '\0', strlen (string[i]));
 	}
@@ -216,7 +216,7 @@ Package * createList(Package *handler, int inputFile, int tokensNumber, Status s
 	char *strbuffer = malloc (256);	
 	memset (strbuffer, 0, strlen (strbuffer));
 
-	while ( (readLine (inputFile, strbuffer))> 0 ) {
+	while ( (readLine (inputFile, strbuffer)) > 0 ) {
 /*
 		output per debug
 		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
@@ -231,7 +231,6 @@ Package * createList(Package *handler, int inputFile, int tokensNumber, Status s
 		output per debug
 		printf ("%s -> %s -> %s\n", string[0], string[1], string[2]);
 */
-
 		/**implementazione in coda*/
 		//handler = pkg_enqueue (handler, string[0], string[1], string[2], status);
 		/**implementazione su pila*/
@@ -243,7 +242,7 @@ Package * createList(Package *handler, int inputFile, int tokensNumber, Status s
 	write (STDOUT_FILENO, "\n", 1);
 	close (inputFile);
 
-	for (; i < tokensNumber; i++)
+	for (i = 0; i < tokensNumber; i++)
 		free (string[i]);
 	free (strbuffer);
 	
@@ -268,7 +267,6 @@ int readLine (int inputFileDes, char *strbuffer) {
 	strbuffer[i] = '\0';	
 
 	return i;
-
 }
 
 /**
@@ -287,7 +285,7 @@ void getTokens (char *string[], char *strbuffer, int tokensNumber) {
 		strbuffer = getToken (string[i], strbuffer, '#', 1);
 	}
 
-	getToken (string[2], strbuffer, '\0', 0);		
+	getToken (string[tokensNumber], strbuffer, '\0', 0);		
 }
 /**
 la funzione prende in ingresso il puntatore all'array in cui scrivera' la stringa,
@@ -303,12 +301,13 @@ richiamare la stessa funzione sul resto della sottostringa.
 char *getToken (char *result, char *input, char terminal, int stepup) {
 	int i = 0;
 	char *punt;
+	
 	while (input[i] != terminal) {
 		result[i] = input[i++];
 	}
-
 	if (stepup == 1) 
 		input++;
+
 	return input+i;
 }
 
@@ -319,8 +318,8 @@ char *getToken (char *result, char *input, char terminal, int stepup) {
 /*===========================================================================*/
 
 int checkArguments (char *argument, int argNum) {
-	int i = 0;
-	int res =  1;
+	int i 	= 0;
+	int res = 1;
 
 	if (argument[i] == '-') {
 		error (0, EINVAL, "argomento %d -> inserire un numero positivo", argNum);
@@ -347,19 +346,20 @@ Il processo server riceve su linea di comando:
 */
 
 int serverInputCheck (int argc, char **argv) {
-	char argv_err0[] 	= "e' necessario inserire: N operatori; K oggetti; file di lettura\n";
+	int i = 0;
+	int test;
+	char argv_err0[] = "e' necessario inserire: N operatori; K oggetti; file di lettura\n";
 	if (argv[1] == NULL || argv[2] == NULL || argv[3] == NULL) {
 		write (STDERR_FILENO, argv_err0, strlen(argv_err0));
 		exit(-1);
 	}
 	
-	int i = 0;
 
 	//uso la funzione error per:
 	//1) scrivere su standard error
 	//2) richiamare un messaggio di errore standard
 
-	int test;
+
 	/* controllo valore operatori attivi*/
 	if ((test = checkArguments (argv[1], 1)) < 0) {
 		exit(-1);
@@ -371,10 +371,14 @@ int serverInputCheck (int argc, char **argv) {
 
 	/* controllo file in lettura*/
 	/* ENOENT = No such file or directory */
-	test = open (argv[3], O_RDONLY);
+	test = open (argv[3], O_RDONLY); 
 	if (test < 0)
 		error (0, ENOENT , "file di testo non valido"), exit (-1);
-	
+
+
+	if (argv[4] != NULL && argv[4][1] == '-' && argv[4][1] == 'd')
+		DEBUG = 1;
+
 	return test;
 }
 
@@ -497,8 +501,6 @@ void commandSwitch (int command, Package *handler) {
 			write (STDOUT_FILENO, err01, strlen (err01));
 		break;
 	}
-
-
 }
 
 int commandToHash (char *command, char **cliCommands) {
@@ -556,13 +558,13 @@ int InitSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue) {
 
 	//creo il socket
 	int sockfd = socket(AF_INET , SOCK_STREAM , 0);
-
+	char mess[] = "Socket creato";
 	if (sockfd == -1)
 	{
 		char mess[] = "Non è possibile creare il socket";
 		write(STDOUT_FILENO, mess, strlen (mess));
 	}
-	puts("Socket creato");
+	write(STDOUT_FILENO, mess, strlen (mess));
 	 
 	//ma il server che indirizzo ip deve avere?!
 	//preaparo la struttura sockaddr_in che contenga le informazioni di connessione
@@ -581,6 +583,7 @@ int InitSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue) {
 
 	//rende socket non bloccante
 	//fcntl(sockfd, F_SETFL, O_NONBLOCK);
+
 	do {
 		bindErr = bind(sockfd,(struct sockaddr *)server , sizeof(struct sockaddr_in));
 		int errsv = errno;
@@ -707,43 +710,44 @@ initClient (int sock, Package *handler, int kPackages) {
 }
 
 void *connection_handler (void *parametri) {
-	//pthread_t tid = pthread_self();
-	//char buff[10];
-	//sprintf (buff, "%d", (int) tid);
-	//write (STDOUT_FILENO, buff, strlen (buff));
-	//write (STDOUT_FILENO, "\n", 1);
-	signal(SIGPIPE,SIG_IGN);
 	int client_sock = *(int *)parametri;
+/*	
+Passaggio *tmp = (Passaggio *)parametri;
+
+	int client_sock = tmp->sockfd;
+	int kPackages = tmp->kPackages;
+	Package *handler = tmp->handler;
+*/
+//	initClient (sock, handler, kPackages);
 	int err0;
+	int err;
 	int i = 0;
+
+	signal(SIGPIPE,SIG_IGN);
 	while ( (err0 = send(client_sock, "A", 1, 0)) > 0) {
 
-		//write (STDOUT_FILENO, "working ", sizeof ("working "));		
-		//write (client_sock, "A", 1);
-		//(err0 = write (client_sock, "A", 1));
-		//sleep (1);
 		i++;			
 		sleep (1);		
 	}
 	perror ("socket client: ");
 	write (STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ("\nfine comunicazioni\n"));	
+
 	/*
-	Passaggio *tmp = (Passaggio *)parametri;
-	int sock = tmp->sockfd;
-	int kPackages = tmp->kPackages;
-	Package *handler = tmp->handler;
-	
-	initClient (sock, handler, kPackages);
+	all'uscita del thread, lo elimino dalla "coda" dei thread attivi e libero
+	uno slot per la connessione. impiego il mutex per poter scrivere sulla
+	variabile globale
 	*/
-	int err = pthread_mutex_lock (&maxThreadsMutex);
-	if (err != 0)
+
+	if ((err = pthread_mutex_lock (&maxThreadsMutex)) != 0)
 		perror ("mutex: "), exit (-1);
 	maxThread--;
+	/*codice di debug*/
+	/*
 	char message[20];
 	sprintf ( message,"nuovo maxThread: %d\n", maxThread);
 	write(STDERR_FILENO , message , strlen(message));	
-	err = pthread_mutex_unlock (&maxThreadsMutex);
-	if (err != 0)
+	*/
+	if ((err = pthread_mutex_unlock (&maxThreadsMutex)) != 0)
 		perror ("mutex: "), exit (-1);
 	return 0;
 }

@@ -13,13 +13,13 @@ int main(int argc, char **argv) {
 	clientInputCheck(argc, argv);
 	int sockfd = connectToServer (argv);
 	char buff[5];
-	memset (buff, '\0', strlen(buff));
+	char mess[] = "in attesa di connessione...\n";
+	memset (buff, '\0', strlen (buff));
 	int rVar;
-	while ((rVar = read (sockfd, buff, 1)) != -1) {
 
-		write (STDOUT_FILENO, buff, 1);
-		memset (buff, '\0', strlen(buff)); 
-
+	while ((rVar = read (sockfd, buff, 1)) != -1) {	
+			write (STDOUT_FILENO, buff, 1);
+			memset (buff, '\0', strlen(buff)); 
 	}
 	/*
 	int command = getLine (STDIN_FILENO, cliCommands);
