@@ -710,14 +710,14 @@ initClient (int sock, Package *handler, int kPackages) {
 }
 
 void *connection_handler (void *parametri) {
-	int client_sock = *(int *)parametri;
-/*	
+	//int client_sock = *(int *)parametri;
+
 Passaggio *tmp = (Passaggio *)parametri;
 
 	int client_sock = tmp->sockfd;
 	int kPackages = tmp->kPackages;
 	Package *handler = tmp->handler;
-*/
+
 //	initClient (sock, handler, kPackages);
 	int err0;
 	int err;
