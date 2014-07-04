@@ -61,10 +61,11 @@ int main (int argc , char *argv[]) {
 void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in client, int clientsize) {
 	
 	char 			tids[32];
-	int 			client_sock;
-	pthread_t 		thread_id;
+	int 			client_sock;	
 	int 			tid;
-	
+	int 			err;
+	pthread_t 		thread_id;	
+
 	tid 			= 0;
 	maxThread 		= 0;
 	clientsize 		= sizeof(struct sockaddr_in);
@@ -97,7 +98,7 @@ void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in clie
 				} else 
 					perror ("impossibile creare il thread");
 			} else {
-				perror ("impossibile accettare la connessione\n");
+				perror ("impossibile accettare la connessione");
 			}
 
 		}
@@ -109,7 +110,8 @@ void connectionManager (int sockfd, int operatorsNumber, struct sockaddr_in clie
 		
 		write (STDOUT_FILENO, tids, strlen (tids));	
 		memset (tids, '\0', strlen (tids));
-	
+		sleep (1);
+
 		
 	}
 
