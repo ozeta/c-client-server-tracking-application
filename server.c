@@ -73,28 +73,27 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 	char *mess00	= "Connessione accettata\n";
 	char *mess01	= "Thread assegnato\n";
 
-	//potrei aver bisogno di un array di sock ed un array di client.
-
 	while (1) {
 
 		if (maxThread < opNumber ) {
 			client_sock = accept(sockfd, (struct sockaddr *)&client, (socklen_t*)&clientsize);
 			if ( client_sock != -1) {
 				write (STDOUT_FILENO, mess00, strlen (mess00));
-				/*
 				Passaggio *param_pass = (Passaggio *) malloc (sizeof (Passaggio));
 				memset (param_pass, 0, sizeof (Passaggio));
 				param_pass->sockfd		= client_sock;
 				param_pass->kPackages 	= kPackages;
 				param_pass->handler 	= handler;
+				printf ("--%d---\n", param_pass->sockfd);
 				if( pthread_create (&thread_arr[maxThread] ,
 				   					NULL ,
 				   					connection_handler ,
 				   					(void *) param_pass) == 0)
-				*/
+				/*
 				if( pthread_create (&thread_arr[maxThread] , NULL,
 				   					connection_handler ,
 				   					(void *) &client_sock) == 0)
+				*/
 				{
 					sprintf  (tids, "nuovo tid: [%d] ", tid);
 					tid++;
@@ -111,13 +110,13 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 					//pthread_join (thread_arr[maxThread] , NULL);
 				} else 
 					perror ("impossibile creare il thread");
-		//free (param_pass);
+			//free (param_pass);
 			} else {
 				perror ("impossibile accettare la connessione");
 			}
 
 		}
-
+		/*
 		int err = pthread_mutex_lock (&maxThreadsMutex);
 
 		sprintf (tids, "thread correnti: [%d] \n", maxThread);
@@ -125,7 +124,8 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 		
 		write (STDOUT_FILENO, tids, strlen (tids));	
 		memset (tids, '\0', strlen (tids));
-		//sleep (1);
+		sleep (1);
+		*/
 
 		
 	}
