@@ -284,9 +284,10 @@ void getTokens (char *string[], char *strbuffer, int tokensNumber) {
 	for (i = 0; i < tokensNumber -1 ; i++) {
 		strbuffer = getToken (string[i], strbuffer, '#', 1);
 	}
-
-	getToken (string[tokensNumber], strbuffer, '\0', 0);		
+	
+	getToken (string[i], strbuffer, '\0', 0);		
 }
+
 /**
 la funzione prende in ingresso il puntatore all'array in cui scrivera' la stringa,
 la stringa di input, il separatore di linea e stepup.
@@ -710,15 +711,16 @@ initClient (int sock, Package *handler, int kPackages) {
 }
 
 void *connection_handler (void *parametri) {
-	//int client_sock = *(int *)parametri;
-
+	
+	int client_sock = *(int *)parametri;
+/*	
 Passaggio *tmp = (Passaggio *)parametri;
 
 	int client_sock = tmp->sockfd;
 	int kPackages = tmp->kPackages;
 	Package *handler = tmp->handler;
-
-//	initClient (sock, handler, kPackages);
+*/
+//	initClient (client_sock, handler, kPackages);
 	int err0;
 	int err;
 	int i = 0;
@@ -749,7 +751,6 @@ Passaggio *tmp = (Passaggio *)parametri;
 	*/
 	if ((err = pthread_mutex_unlock (&maxThreadsMutex)) != 0)
 		perror ("mutex: "), exit (-1);
-	return 0;
+
+	return((void *)0); 
 }
-
-

@@ -20,7 +20,7 @@ int main (int argc , char *argv[]) {
 	//check preliminare su input
 	//signal(SIGINT,SIG_IGN);
 	int inputFD = serverInputCheck(argc, argv);
-	int operatorsNumber = atoi (argv[1]);
+	int opNumber = atoi (argv[1]);
 	int kPackages		= atoi (argv[2]);
 	int err;
 	int tokensNumber	= 3;	
@@ -34,7 +34,7 @@ int main (int argc , char *argv[]) {
 	if ((err = pthread_mutex_init (&packageMutex, NULL)) != 0) 
 		perror ("Impossibile allocare il mutex per la lista"), exit (-1);
 
-	//handler = (Package *) createList (handler, inputFD, tokensNumber, status);
+	handler = (Package *) createList (handler, inputFD, tokensNumber, status);
 	//pkglist_print (handler);
 
 	struct sockaddr_in *server , client;
@@ -49,7 +49,7 @@ int main (int argc , char *argv[]) {
 	//accettati.
 	sockfd = InitSocket (server, port, maxOperatorsQueue);
 
-	connectionManager (sockfd, operatorsNumber, kPackages, handler, client, clientsize);
+	connectionManager (sockfd, opNumber, kPackages, handler, client, clientsize);
 
 	close (sockfd);
 	pthread_mutex_destroy(&maxThreadsMutex);
@@ -57,14 +57,15 @@ int main (int argc , char *argv[]) {
 	return 0;
 }
 
-void connectionManager (int sockfd, int operatorsNumber, int kPackages, Package *handler, struct sockaddr_in client, int clientsize) {
+void connectionManager (int sockfd, int opNumber, int kPackages, Package *handler,
+                        struct sockaddr_in client, int clientsize) {
 	
 	char 			tids[32];
 	int 			client_sock;	
 	int 			tid;
 	int 			err;
 	pthread_t 		thread_id;
-	pthread_t 		*thread_arr = (pthread_t *) malloc (operatorsNumber * sizeof (pthread_t));	
+	pthread_t 		*thread_arr = (pthread_t *) malloc (opNumber * sizeof (pthread_t));	
 
 	tid 			= 0;
 	maxThread 		= 0;
@@ -76,18 +77,25 @@ void connectionManager (int sockfd, int operatorsNumber, int kPackages, Package 
 
 	while (1) {
 
-		if (maxThread < operatorsNumber ) {
+		if (maxThread < opNumber ) {
 			client_sock = accept(sockfd, (struct sockaddr *)&client, (socklen_t*)&clientsize);
 			if ( client_sock != -1) {
 				write (STDOUT_FILENO, mess00, strlen (mess00));
+				/*
 				Passaggio *param_pass = (Passaggio *) malloc (sizeof (Passaggio));
 				memset (param_pass, 0, sizeof (Passaggio));
-				/*
 				param_pass->sockfd		= client_sock;
 				param_pass->kPackages 	= kPackages;
 				param_pass->handler 	= handler;
+				if( pthread_create (&thread_arr[maxThread] ,
+				   					NULL ,
+				   					connection_handler ,
+				   					(void *) param_pass) == 0)
 				*/
-				if( pthread_create (&thread_arr[maxThread] , NULL ,  connection_handler , (void *) &client_sock) == 0) {
+				if( pthread_create (&thread_arr[maxThread] , NULL,
+				   					connection_handler ,
+				   					(void *) &client_sock) == 0)
+				{
 					sprintf  (tids, "nuovo tid: [%d] ", tid);
 					tid++;
 
@@ -97,13 +105,13 @@ void connectionManager (int sockfd, int operatorsNumber, int kPackages, Package 
 					} else
 						perror ("server-mutex:errore");
 
-					write (STDOUT_FILENO, tids, strlen (tids));	 
-					write (STDOUT_FILENO, mess01, strlen (mess01));
+					//write (STDOUT_FILENO, tids, strlen (tids));	 
+					//write (STDOUT_FILENO, mess01, strlen (mess01));
 				
 					//pthread_join (thread_arr[maxThread] , NULL);
 				} else 
 					perror ("impossibile creare il thread");
-			free (param_pass);
+		//free (param_pass);
 			} else {
 				perror ("impossibile accettare la connessione");
 			}
@@ -117,7 +125,7 @@ void connectionManager (int sockfd, int operatorsNumber, int kPackages, Package 
 		
 		write (STDOUT_FILENO, tids, strlen (tids));	
 		memset (tids, '\0', strlen (tids));
-		sleep (1);
+		//sleep (1);
 
 		
 	}
