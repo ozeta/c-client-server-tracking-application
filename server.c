@@ -36,7 +36,7 @@ int main (int argc , char *argv[]) {
 
 	handler = (Package *) createList (handler, inputFD, tokensNumber, status);
 	//pkglist_print (handler);
-
+	//return 0;
 	struct sockaddr_in *server , client;
 	//porta tcp random nel range assegnato da IANA per l'utente
 	srand (time(NULL));
@@ -66,7 +66,7 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 	int 			err;
 	pthread_t 		thread_id;
 	pthread_t 		*thread_arr = (pthread_t *) malloc (opNumber * sizeof (pthread_t));	
-
+	pthread_cond_t  condition;
 	tid 			= 0;
 	maxThread 		= 0;
 	clientsize 		= sizeof(struct sockaddr_in);
@@ -79,21 +79,17 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 			client_sock = accept(sockfd, (struct sockaddr *)&client, (socklen_t*)&clientsize);
 			if ( client_sock != -1) {
 				write (STDOUT_FILENO, mess00, strlen (mess00));
-				Passaggio *param_pass = (Passaggio *) malloc (sizeof (Passaggio));
-				memset (param_pass, 0, sizeof (Passaggio));
-				param_pass->sockfd		= client_sock;
-				param_pass->kPackages 	= kPackages;
-				param_pass->handler 	= handler;
-				printf ("--%d---\n", param_pass->sockfd);
+				Passaggio param_pass;
+				memset (&param_pass, 0, sizeof (Passaggio));
+				param_pass.sockfd		= client_sock;
+				param_pass.kPackages 	= kPackages;
+				param_pass.handler 		= handler;
+				//printf ("--%d---\n", param_pass.sockfd);
 				if( pthread_create (&thread_arr[maxThread] ,
 				   					NULL ,
 				   					connection_handler ,
-				   					(void *) param_pass) == 0)
-				/*
-				if( pthread_create (&thread_arr[maxThread] , NULL,
-				   					connection_handler ,
-				   					(void *) &client_sock) == 0)
-				*/
+				   					(void *) &param_pass) == 0)
+
 				{
 					sprintf  (tids, "nuovo tid: [%d] ", tid);
 					tid++;
@@ -102,7 +98,7 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 						maxThread++;
 						pthread_mutex_unlock (&maxThreadsMutex);
 					} else
-						perror ("server-mutex:errore");
+						perror ("server-mutex: errore");
 
 					//write (STDOUT_FILENO, tids, strlen (tids));	 
 					//write (STDOUT_FILENO, mess01, strlen (mess01));
@@ -110,7 +106,7 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 					//pthread_join (thread_arr[maxThread] , NULL);
 				} else 
 					perror ("impossibile creare il thread");
-			//free (param_pass);
+			//
 			} else {
 				perror ("impossibile accettare la connessione");
 			}
@@ -126,7 +122,7 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 		memset (tids, '\0', strlen (tids));
 		sleep (1);
 		*/
-
+		//free (param_pass);
 		
 	}
 

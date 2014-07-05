@@ -50,31 +50,22 @@ void pkglist_print (Package *handler) {
 
 void pkg_print (Package *handler) {
 	if (handler != NULL) {
-		char *sepEQ = " = ";
-		char *sepComma = " , ";
-		char *sepCR = "\n";
-		char *message = malloc (256);
-		char *status = malloc (14);
-		memset (status, '\0', 14);
-		memset (message, 0, strlen (message));
-		message = strcat (message, "Item");
-		strcat (message, sepEQ);
-		strcat (message, handler->codice_articolo);
-		strcat (message, sepComma);
-		strcat (message, handler->descrizione_articolo);
-		strcat (message, sepComma);
-		strcat (message, handler->indirizzo_destinazione);
-		strcat (message, sepComma);
-		strcat (message, "STATO: ");
+		char *message = malloc (256 * sizeof (char));
+		char status[20];
+		memset (message, '\0', strlen (message) -1);
+
 		switch (handler->stato_articolo) {
-			case STORAGE: status = "STORAGE"; break;
-			case TOBEDELIVERED: status = "TOBEDELIVERED"; break;
-			case DELIVERED: status = "DELIVERED"; break;							
-			case COLLECTED: status = "COLLECTED"; break;
-			default: status = "boh?"; break;
+			case STORAGE: strcpy (status, "STORAGE"); break;
+			case TOBEDELIVERED: strcpy (status, "TOBEDELIVERED"); break;
+			case DELIVERED: strcpy (status, "DELIVERED"); break;
+			case COLLECTED: strcpy (status, "COLLECTED"); break;
+			default: strcpy (status, "boh?"); break;
 		}
-		strcat (message, status);
-		strcat (message, sepCR);		
+
+		sprintf (message, "Item= %s , %s , %s . STATO: %s\n", handler->codice_articolo,
+				handler->descrizione_articolo,
+				handler->indirizzo_destinazione,
+				status);	
 		write (STDOUT_FILENO, message, strlen (message));
 		free (message);
 	}
@@ -651,63 +642,50 @@ int connectToServer (char **argv) {
 
 /*===========================================================================*/
 
-char *encodePkgForTransmission (int sockfd, Package *handler) {
+char *encodePkgForTransmission (Package *handler) {
 
 	if (handler != NULL) {
-		char *sepComma = "#";
-		char *sepCR = "\n";
-		char *message = malloc (256);
-		char *status = malloc (14);
-		memset (status, '\0', 14);
-		memset (message, 0, strlen (message));
-		strcat (message, handler->codice_articolo);
-		strcat (message, sepComma);
-		strcat (message, handler->descrizione_articolo);
-		strcat (message, sepComma);
-		strcat (message, handler->indirizzo_destinazione);
-		strcat (message, sepComma);
+		char *message = malloc (256 * sizeof (char));
+		//memset (message, '\0', strlen (message) -1);
 
-		switch (handler->stato_articolo) {
-			case STORAGE: status = "STORAGE"; break;
-			case TOBEDELIVERED: status = "TOBEDELIVERED"; break;
-			case DELIVERED: status = "DELIVERED"; break;							
-			case COLLECTED: status = "COLLECTED"; break;
-			default: status = "boh?"; break;
-		}
-		strcat (message, status);
-		strcat (message, sepCR);		
-		write (sockfd, message, strlen (message));
+		sprintf (message, "Item= %s#%s#%s#%d\n", handler->codice_articolo,
+				handler->descrizione_articolo,
+				handler->indirizzo_destinazione,
+				handler->stato_articolo);	
+
+		return message;
 	}
-
-}
+}		
 
 /*===========================================================================*/
 
 
-
-initClient (int sock, Package *handler, int kPackages) {
+initClient (int sockfd, Package *handler, int kPackages) {
 	//ATTENZIONE, QUI BISOGNA GESTIRE IL MUTEX GLOBALE!!!
 	int i = 0;
-
+	char *message;
 	Package *current = handler;
 	if (current == NULL) {
 		while (current == NULL);
 	}
-	//BLOCCA MUTEX
+	pthread_mutex_lock (&packageMutex);
 	while (current != NULL && i < kPackages) {
 		if (current->stato_articolo == STORAGE) {
 			//leggi pacchetto
 			current->stato_articolo = TOBEDELIVERED;
 			//codifica e invia pacchetto
-
+			message = encodePkgForTransmission (current);
+			write (sockfd, message, strlen (message));
 			current = current->next;
 			i++;
+			free (message);
+			usleep (500000);
 		} else {
 			current = current->next;
 		}
 	}
-	write (sock, "INIT_END#", sizeof ("INIT_END#"));
-	//SBLOCCA MUTEX
+	pthread_mutex_unlock (&packageMutex);
+	write (sockfd, "INIT_END#", sizeof ("INIT_END#"));
 }
 
 void *connection_handler (void *parametri) {
@@ -716,15 +694,16 @@ void *connection_handler (void *parametri) {
 	int client_sock = *(int *)parametri;
 */
 Passaggio *tmp = (Passaggio *)parametri;
-
-	int client_sock = tmp->sockfd;
-	int kPackages = tmp->kPackages;
-	Package *handler = tmp->handler;
-	printf ("--%d---\n", tmp->sockfd);
-//	initClient (client_sock, handler, kPackages);
 	int err0;
 	int err;
 	int i = 0;
+	int client_sock = tmp->sockfd;
+	int kPackages = tmp->kPackages;
+	Package *handler = tmp->handler;
+	//printf ("--%d---\n", tmp->sockfd);
+	initClient (client_sock, handler, kPackages);
+	/*
+
 
 	signal(SIGPIPE,SIG_IGN);
 	while ( (err0 = send(client_sock, "A", 1, 0)) > 0) {
@@ -732,6 +711,7 @@ Passaggio *tmp = (Passaggio *)parametri;
 		i++;			
 		sleep (1);		
 	}
+	*/
 	perror ("socket client: ");
 	write (STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ("\nfine comunicazioni\n"));	
 
@@ -740,9 +720,7 @@ Passaggio *tmp = (Passaggio *)parametri;
 	uno slot per la connessione. impiego il mutex per poter scrivere sulla
 	variabile globale
 	*/
-
-	if ((err = pthread_mutex_lock (&maxThreadsMutex)) != 0)
-		perror ("mutex: "), exit (-1);
+	pthread_mutex_lock (&maxThreadsMutex);
 	maxThread--;
 	/*codice di debug*/
 	/*
@@ -750,8 +728,7 @@ Passaggio *tmp = (Passaggio *)parametri;
 	sprintf ( message,"nuovo maxThread: %d\n", maxThread);
 	write(STDERR_FILENO , message , strlen(message));	
 	*/
-	if ((err = pthread_mutex_unlock (&maxThreadsMutex)) != 0)
-		perror ("mutex: "), exit (-1);
+	pthread_mutex_unlock (&maxThreadsMutex);
 
 	return((void *)0); 
 }
