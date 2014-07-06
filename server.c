@@ -36,7 +36,7 @@ int main (int argc , char *argv[]) {
 
 	handler = (Package *) createList (handler, inputFD, tokensNumber, status);
 	close (inputFD);
-	//pkglist_print (handler);
+	pkglist_print (handler);
 	//return 0;
 	struct sockaddr_in *server , client;
 	//porta tcp random nel range assegnato da IANA per l'utente

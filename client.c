@@ -29,16 +29,20 @@ int main(int argc, char **argv) {
 	int sockfd = initClientSocket (argv);
 	Package *handler = NULL;
 	handler = initClient (sockfd, handler);
+	//pkglist_print (handler);
 	write (STDOUT_FILENO, mess, strlen (mess));
 	while (handler != NULL) {
 		write (STDOUT_FILENO, mess1, strlen (mess1));	
+
 		showMenu();
+		char *stringCommand = (char *) malloc (256 * sizeof (char));
+		memset (stringCommand, 0, 256 * sizeof (char)); 
 		int command = getLine (STDIN_FILENO, cliCommands);
 		commandSwitch (command, handler, sockfd);
+		free (stringCommand);
 	}
 	write (STDOUT_FILENO, "Ciao!\n", 6);
 	close (sockfd);
 
 	return 0;
 }
-

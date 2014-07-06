@@ -50,7 +50,7 @@ void pkglist_print (Package *handler) {
 
 void pkg_print (Package *handler) {
 	if (handler != NULL) {
-		char *message = malloc (256 * sizeof (char));
+		char *message = (char *) malloc (256 * sizeof (char));
 		char status[20];
 		memset (message, '\0', strlen (message));
 
@@ -210,10 +210,10 @@ Package * createList (Package *handler, int inputFD, int tokensNumber, int statu
 	int check = 1;
 	char *ptr;
 	for (i = 0; i < tokensNumber; i++) {
-		str[i] = (char *) malloc (256);
+		str[i] = (char *) malloc (256 * sizeof (char));
 		memset (str[i], '\0', strlen (str[i]));
 	}
-	char *strbuffer = malloc (256);	
+	char *strbuffer = malloc (256 * sizeof (char));	
 	memset (strbuffer, 0, strlen (strbuffer));
 	while (check != 0 && (readLine (inputFD, strbuffer)) > 0) {
 		//funzione di libreria che cerca una sottostringa
@@ -520,17 +520,17 @@ void getCommand (char *string, const char *strbuffer) {
 	}
 	
 }
-int getLine (int inputFD, char **cliCommands) {
+int getLine (int inputFD, char **cliCommands, char *stringCommand) {
 
-	char *string = (char *) malloc (256);
+	char *string = (char *) malloc (256 * sizeof (char));
 	memset (string, '\0', strlen (string));	
 
 	int rVar = 1;
 	int command;
-	char *strbuffer = malloc (256);	
+	char *strbuffer = (char *) malloc (256 * sizeof (char));	
 	memset (strbuffer, 0, strlen (strbuffer));
 
-	if ( (rVar = readLine (inputFD, strbuffer))> 0 ) {
+	if ( (rVar = readLine (inputFD, strbuffer)) > 0 ) {
 
 		//output per debug
 		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
@@ -651,10 +651,10 @@ int initClientSocket (char **argv) {
 char *encodePkgForTransmission (Package *handler) {
 
 	if (handler != NULL) {
-		char *message = malloc (256 * sizeof (char));
+		char *message = (char *) malloc (256 * sizeof (char));
 		//memset (message, '\0', strlen (message) -1);
 
-		sprintf (message, "Item= %s#%s#%s#%d\n", handler->codice_articolo,
+		sprintf (message, "%s#%s#%s#%d\n", handler->codice_articolo,
 				handler->descrizione_articolo,
 				handler->indirizzo_destinazione,
 				handler->stato_articolo);	
@@ -720,4 +720,61 @@ void *connection_handler (void *parametri) {
 	pthread_mutex_unlock (&maxThreadsMutex);
 
 	return((void *)0); 
+}
+
+
+void elencaClientToServer (int sockfd) {
+
+	int i;
+	int check = 1;
+	char *ptr;
+	char c[5];
+	char *strbuffer = (char *) malloc (256 * sizeof (char));	
+	memset (strbuffer, 0, strlen (strbuffer));
+	while (check != 0 && (readLine (sockfd, strbuffer)) > 0) {
+		//funzione di libreria che cerca una sottostringa
+		//in una sottostringa e restituisce il puntatore
+		ptr = strstr (strbuffer, "EOM#");
+		if (ptr == NULL) {
+			write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
+			write (STDOUT_FILENO, "\n", 1);
+		} else
+			check = 0;
+		memset (strbuffer, 0, strlen (strbuffer));	
+	}
+
+	free (strbuffer);
+
+}
+
+
+
+void elencaServerToClient (int sockfd, Package *handler) {
+
+	int i = 0;
+	char *message;
+	Package *current = handler;
+	if (current == NULL) {
+		while (current == NULL);
+	}
+	pthread_mutex_lock (&packageMutex);
+	while (current != NULL) {
+		if (current->stato_articolo == STORAGE) {
+			//leggi pacchetto
+			pkg_print (current);
+			//codifica e invia pacchetto
+			message = encodePkgForTransmission (current);
+			write (sockfd, message, strlen (message));
+			current = current->next;
+			i++;
+			free (message);
+			//usleep (500000);
+			usleep (50000);
+		} else {
+			current = current->next;
+		}
+	}
+	pthread_mutex_unlock (&packageMutex);
+	write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
+
 }

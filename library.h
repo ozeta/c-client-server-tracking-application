@@ -88,6 +88,9 @@ void pkg_print (Package *handler);
 
 Package * getStoredPackage (Package *, int);
 Package * createListA (Package *handler, int inputFD, int tokensNumber, int status);
+void elencaClientToServer (int sockfd);
+void elencaServerToClient (int sockfd, Package *handler);
+
 #endif
 
 
