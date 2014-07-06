@@ -28,11 +28,11 @@ int main(int argc, char **argv) {
 		write (STDOUT_FILENO, mess1, strlen (mess1));	
 
 		showMenu();
-		char *stringCommand = (char *) malloc (256 * sizeof (char));
-		memset (stringCommand, 0, 256 * sizeof (char)); 
-		int command = getLine (STDIN_FILENO);
-		commandSwitch (command, handler, sockfd);
-		free (stringCommand);
+		char *cmdPointer;
+
+		int command = getLine (STDIN_FILENO, cmdPointer);
+		commandSwitch (command, cmdPointer, handler, sockfd);
+		free (cmdPointer);
 	}
 	write (STDOUT_FILENO, "Ciao!\n", 6);
 	close (sockfd);
