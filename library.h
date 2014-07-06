@@ -74,23 +74,38 @@ typedef struct tmpStruct {
 
 
 
-void connectionManager (int sockfd, int operatorsNumber, int kPackages, Package *handler, struct sockaddr_in client, int clientsize);
-
-Package *	createList(Package *handler, int inputFile, int tokensNumber, int status);
-int 		readLine (int inputFile, char *strbuffer);
-void		getTokens (char *string[], char *strbuffer, int tokensNumber);
-char 	* 	getSubstr (char *result, char *input, char separator, int stepup);
-
-
 void pkglist_print (Package *handler);
-
 void pkg_print (Package *handler);
-
-Package * getStoredPackage (Package *, int);
-Package * createListA (Package *handler, int inputFD, int tokensNumber, int status);
+Package * pkg_initialize (char **buffer, int status);
+Package * pkg_enqueue (Package * handler, char **buffer, int status);
+Package * pkg_push (Package * handler, char **buffer, int status);
+Package * pkg_delete (Package * handler, char *buffer0);
+Package * pkg_find (Package * handler, char *pkgCode);
+Package * getStoredPackage (Package * handler, int status);
+int isEndOfMessage (char *string);
+Package * createList (Package *handler, int inputFD, int tokensNumber, int status);
+int readLine (int inputFD, char *strbuffer);
+void getTokens (char *string[], char *strbuffer, int tokensNumber);
+char *getSubstr (char *result, char *input, char terminal, int stepup);
+int checkArguments (char *argument, int argNum);
+int serverInputCheck (int argc, char **argv);
+int randomIntGenerator (int inf, int sup);
+int isValidIpAddress (char *ipAddress);
+int isPortValid (char *argument, int inf, int sup);
+void clientInputCheck (int argc, char **argv);
+void showMenu (void);
+void commandSwitch (int command, Package *handler, int sockfd);
+void commandSwitchServer (int command, Package *handler, int sockfd);
+int commandToHash (char *command);
+void getCommand (char *string, const char *strbuffer);
+int getLine (int inputFD);
+int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue);
+int initClientSocket (char **argv);
+char *encodePkgForTransmission (Package *handler);
+void threadClientInit (int sockfd, Package *handler, int kPackages);
+void *thread_connection_handler (void *parametri);
+void talkWithClient (int client_sock, Package *handler);
 void elencaClientToServer (int sockfd);
 void elencaServerToClient (int sockfd, Package *handler);
-
+void commandSwitch (int command, Package *handler, int sockfd);
 #endif
-
-

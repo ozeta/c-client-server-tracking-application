@@ -40,6 +40,15 @@ per motivi di efficienza (velocita'/memoria) di stack e heap preferisco
  chiamare prima la visita ricorsiva sul nodo successivo e poi
  effettuare le operazioni sul nodo.
 */
+
+char *cliCommands[5] = {
+	"ELENCASERVER",
+	"CONSEGNATO",
+	"RITIRATO",
+	"SMISTA",
+	"ELENCA"
+};
+
 void pkglist_print (Package *handler) {
 	if (handler != NULL) {
 		pkglist_print(handler->next);	
@@ -501,7 +510,7 @@ void commandSwitch (int command, Package *handler, int sockfd) {
 	}
 }
 
-int commandToHash (char *command, char **cliCommands) {
+int commandToHash (char *command) {
 	int i = 0;
 	int k = 0;
 	while ( i < 5 && (strcasecmp (command, cliCommands[i++]) != 0))
@@ -520,13 +529,12 @@ void getCommand (char *string, const char *strbuffer) {
 	}
 	
 }
-int getLine (int inputFD, char **cliCommands, char *stringCommand) {
-
-	char *string = (char *) malloc (256 * sizeof (char));
-	memset (string, '\0', strlen (string));	
+int getLine (int inputFD) {
 
 	int rVar = 1;
 	int command;
+	char *string = (char *) malloc (256 * sizeof (char));
+	memset (string, '\0', strlen (string));	
 	char *strbuffer = (char *) malloc (256 * sizeof (char));	
 	memset (strbuffer, 0, strlen (strbuffer));
 
@@ -537,7 +545,7 @@ int getLine (int inputFD, char **cliCommands, char *stringCommand) {
 		write (STDOUT_FILENO, "\n", 1);
 		
 		getCommand (string, strbuffer);
-		command = commandToHash (string, cliCommands);
+		command = commandToHash (string);
 		//debug
 		//write (STDOUT_FILENO, string, strlen (string));
 	}
@@ -696,7 +704,7 @@ void threadClientInit (int sockfd, Package *handler, int kPackages) {
 	write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
 }
 
-void *connection_handler (void *parametri) {
+void *thread_connection_handler (void *parametri) {
 	signal(SIGPIPE ,SIG_IGN);
 	Passaggio *tmp = (Passaggio *)parametri;
 	int err0;
@@ -706,7 +714,7 @@ void *connection_handler (void *parametri) {
 	int kPackages = tmp->kPackages;
 	Package *handler = tmp->handler;
 	threadClientInit (client_sock, handler, kPackages);
-
+	talkWithClient(client_sock, handler);
 	perror ("socket client: ");
 	write (STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ("\nfine comunicazioni\n"));	
 
@@ -722,6 +730,41 @@ void *connection_handler (void *parametri) {
 	return((void *)0); 
 }
 
+void talkWithClient (int client_sock, Package *handler) {
+		int command = getLine (client_sock);
+		commandSwitchServer (command, handler, client_sock);
+
+}
+
+void commandSwitchServer (int command, Package *handler, int sockfd) {
+	char *err01 = "warning! comando non valido!\n";
+
+	switch (command) {
+
+		case ELENCASERVER:
+		/*ELENCA STAMPA LA LISTA REMOTA*/
+			write (STDOUT_FILENO, "elencaserver\n", strlen ("elencaserver\n"));
+			elencaClientToServer (sockfd);
+		break;
+		case CONSEGNATO:
+			write (STDOUT_FILENO, "consegnato\n", strlen ("consegnato\n"));
+		break;
+		case RITIRATO:
+			write (STDOUT_FILENO, "ritirato\n", strlen ("ritirato\n"));
+		break;
+		case SMISTA:
+			write (STDOUT_FILENO, "smista\n", strlen ("smista\n"));
+		break;
+		case ELENCA:
+		/*ELENCA STAMPA LA LISTA LOCALE*/
+			write (STDOUT_FILENO, "elenca:\n", strlen ("elenca:\n"));
+			pkglist_print (handler);
+		break;						
+		default:
+			write (STDOUT_FILENO, err01, strlen (err01));
+		break;
+	}
+}
 
 void elencaClientToServer (int sockfd) {
 

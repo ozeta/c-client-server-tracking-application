@@ -1,12 +1,5 @@
 #include "library.h"
 
-char *cliCommands[5] = {
-	"ELENCASERVER",
-	"CONSEGNATO",
-	"RITIRATO",
-	"SMISTA",
-	"ELENCA"
-};
 
 Package *initClient (int sockfd, Package *handler) {
 	//pkg handler, socket, tokens, status
@@ -37,7 +30,7 @@ int main(int argc, char **argv) {
 		showMenu();
 		char *stringCommand = (char *) malloc (256 * sizeof (char));
 		memset (stringCommand, 0, 256 * sizeof (char)); 
-		int command = getLine (STDIN_FILENO, cliCommands);
+		int command = getLine (STDIN_FILENO);
 		commandSwitch (command, handler, sockfd);
 		free (stringCommand);
 	}
