@@ -681,7 +681,7 @@ void threadClientInit (int sockfd, Package *handler, int kPackages) {
 		}
 	}
 	pthread_mutex_unlock (&packageMutex);
-	write (sockfd, "EOM#\n", sizeof ("EOM##\0"));
+	write (sockfd, "EOM#\n", sizeof ("EOM#\0"));
 }
 
 void *connection_handler (void *parametri) {
@@ -714,28 +714,25 @@ Package * createListA (Package *handler, int inputFD, int tokensNumber, int stat
 	char *str[tokensNumber];
 	int i;
 	int check = 1;
+	char *ptr;
 	for (i = 0; i < tokensNumber; i++) {
 		str[i] = (char *) malloc (256);
 		memset (str[i], '\0', strlen (str[i]));
 	}
-
 	char *strbuffer = malloc (256);	
 	memset (strbuffer, 0, strlen (strbuffer));
-	char *ptr;
-	while ( (readLine (inputFD, strbuffer)) > 0 && check != 0) {
-		if ( (ptr = strstr (strbuffer, "EOM")) == NULL)
-			break;	
-		getTokens (str, strbuffer, tokensNumber);
-		check = isEndOfMessage(str[0]);
-		if ( check != 0) {
+	while (check != 0 && (readLine (inputFD, strbuffer)) > 0) {
+		ptr = strstr(strbuffer, "EOM#");
+		if (ptr == NULL) {
+			getTokens (str, strbuffer, tokensNumber);
 			/**implementazione con push su "pila"*/
 			handler = pkg_push (handler, str, status);
-
 			for (i = 0; i < tokensNumber; i++)
 				memset (str[i], '\0', strlen (str[i]));
-		}
+			memset (strbuffer, 0, strlen (strbuffer));
+		} else
+			check = 0;	
 	}
-	//write (STDOUT_FILENO, "\n", 1);
 
 	for (i = 0; i < tokensNumber; i++)
 		free (str[i]);

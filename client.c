@@ -10,7 +10,7 @@ char *cliCommands[5] = {
 
 Package *initClient (int sockfd, Package *handler) {
 	//pkg handler, socket, tokens, status
-	handler = createList  (handler, sockfd,  3, 2);
+	handler = createListA  (handler, sockfd,  4, -1);
 	pkglist_print (handler);
 
 	return handler;
@@ -23,7 +23,6 @@ int main(int argc, char **argv) {
 	Package *handler = NULL;
 	handler = initClient (sockfd, handler);
 
-	pkglist_print (handler);
 	write (STDOUT_FILENO, "ok\n", 3);
 	close (sockfd);
 
