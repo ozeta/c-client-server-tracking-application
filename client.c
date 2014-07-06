@@ -8,38 +8,44 @@ char *cliCommands[5] = {
 	"ELENCA"
 };
 
+Package *initClient (int sockfd, Package *handler) {
+	//pkg handler, socket, tokens, status
+	handler = createList  (handler, sockfd,  3, 2);
+	pkglist_print (handler);
+
+	return handler;
+}
+
 int main(int argc, char **argv) {
 
 	clientInputCheck(argc, argv);
-	int sockfd = connectToServer (argv);
-	char buff[5];
-	char mess[] = "in attesa di connessione...\n";
-	memset (buff, '\0', strlen (buff));
-	int rVar;
-
-	while ((rVar = read (sockfd, buff, 1)) != -1) {	
-			write (STDOUT_FILENO, buff, 1);
-			memset (buff, '\0', strlen(buff)); 
-	}
-	/*
-	int command = getLine (STDIN_FILENO, cliCommands);
+	int sockfd = initClientSocket (argv);
 	Package *handler = NULL;
-	
-	int inputFD = open ("test.txt", O_RDONLY);
-	int tokensNumber = 3;
-	Status status = DELIVERED;
-	handler = (Package *) createList (handler, inputFD, tokensNumber, status);
-	commandSwitch (command, handler);
-	*/
+	handler = initClient (sockfd, handler);
+
+	pkglist_print (handler);
+	write (STDOUT_FILENO, "ok\n", 3);
 	close (sockfd);
+
+	return 0;
+}
+
+
+
 	//leggo da stdin
 	//estrapolo il primo token
 	//lo comparo con l'array client
 	//estraggo l'indice dell'array
 	//switcho sui 5 casi possibili
-	return 0;
-}
+/*
+int command = getLine (STDIN_FILENO, cliCommands);
 
+int inputFD = open ("test.txt", O_RDONLY);
+int tokensNumber = 3;
+Status status = DELIVERED;
+handler = (Package *) createList (handler, inputFD, tokensNumber, status);
+commandSwitch (command, handler);
+*/
 /*
 void getLineA (int inputFD) {
 	char *strbuffer = malloc (256);

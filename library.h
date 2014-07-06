@@ -76,18 +76,18 @@ typedef struct tmpStruct {
 
 void connectionManager (int sockfd, int operatorsNumber, int kPackages, Package *handler, struct sockaddr_in client, int clientsize);
 
-Package *	createList(Package *handler, int inputFile, int tokensNumber, Status status);
+Package *	createList(Package *handler, int inputFile, int tokensNumber, int status);
 int 		readLine (int inputFile, char *strbuffer);
 void		getTokens (char *string[], char *strbuffer, int tokensNumber);
-char 	* 	getToken (char *result, char *input, char separator, int stepup);
+char 	* 	getSubstr (char *result, char *input, char separator, int stepup);
 
 
 void pkglist_print (Package *handler);
 
 void pkg_print (Package *handler);
 
-Package * getStoredPackage (Package *, Status);
-
+Package * getStoredPackage (Package *, int);
+Package * createListA (Package *handler, int inputFD, int tokensNumber, int status);
 #endif
 
 

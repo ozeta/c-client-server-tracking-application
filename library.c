@@ -52,7 +52,7 @@ void pkg_print (Package *handler) {
 	if (handler != NULL) {
 		char *message = malloc (256 * sizeof (char));
 		char status[20];
-		memset (message, '\0', strlen (message) -1);
+		memset (message, '\0', strlen (message));
 
 		switch (handler->stato_articolo) {
 			case STORAGE: strcpy (status, "STORAGE"); break;
@@ -74,10 +74,11 @@ void pkg_print (Package *handler) {
 
 /**
 pkg_initialize
-status: -1 		-> non aggiornare lo stato
+status: -1 		-> non aggiornare lo stato e leggi da buffer
 status: [0,3]	-> modifica lo stato con uno di quelli disponibili
 */
-Package * pkg_initialize(char *buffer0, char *buffer1, char *buffer2, Status status){
+Package * pkg_initialize (char **buffer, int status) {
+	int i = 0;
 	char *err00 = "err00: memoria esaurita\n";
 	char *err01 = "err01: impossibile inizializzare il mutex\n";	
 	Package * newPkg   = (Package *) malloc (sizeof (Package));
@@ -86,34 +87,37 @@ Package * pkg_initialize(char *buffer0, char *buffer1, char *buffer2, Status sta
 		write (STDERR_FILENO, err00, strlen (err00));
 		return NULL;
 	}
-	memset (newPkg->codice_articolo, '\0', strlen(newPkg->codice_articolo));
-	memset (newPkg->descrizione_articolo, '\0', strlen(newPkg->descrizione_articolo));
-	memset (newPkg->indirizzo_destinazione, '\0', strlen(newPkg->indirizzo_destinazione));
-	strcpy (newPkg->codice_articolo, buffer0);
-	strcpy (newPkg->descrizione_articolo, buffer1);
-	strcpy (newPkg->indirizzo_destinazione, buffer2);
+	memset (newPkg, 0, sizeof (Package));
+
+	strcpy (newPkg->codice_articolo, buffer[0]);
+	strcpy (newPkg->descrizione_articolo, buffer[1]);
+	strcpy (newPkg->indirizzo_destinazione, buffer[2]);
 	if (status != -1)
 		newPkg->stato_articolo = status;
+	else {
+		i = atoi (buffer[3]);
+		newPkg->stato_articolo = i;	
+	}
 	newPkg->next = NULL;
 	return newPkg;
 }
 
-Package * pkg_enqueue (Package * handler, char *buffer0, char *buffer1, char *buffer2, Status status) {
+Package * pkg_enqueue (Package * handler, char **buffer, int status) {
 	if (handler == NULL){
-		Package * nuovo_nodo = pkg_initialize (buffer0, buffer1, buffer2, status);
+		Package * nuovo_nodo = pkg_initialize (buffer, status);
 		if (nuovo_nodo != NULL) {
 			nuovo_nodo->next = handler;
 			handler	= nuovo_nodo;
 		}
 	} else
-		handler->next = pkg_enqueue (handler->next, buffer0, buffer1, buffer2, status);
+		handler->next = pkg_enqueue (handler->next, buffer, status);
 
 	return handler;
 }
 
 
-Package * pkg_push (Package * handler, char *buffer0, char *buffer1, char *buffer2, Status status) {
-	Package * newPkg = pkg_initialize (buffer0, buffer1, buffer2, status);
+Package * pkg_push (Package * handler, char **buffer, int status) {
+	Package * newPkg = pkg_initialize (buffer, status);
 	if (handler != NULL)
 		newPkg->next = handler;
 	return newPkg;
@@ -167,22 +171,26 @@ Package * pkg_find (Package * handler, char *pkgCode) {
 }
 
 /**funzione di ricerca basata sullo stato di magazzino dell'articolo*/
-Package * getStoredPackage (Package * handler, Status pkgCode) {
+Package * getStoredPackage (Package * handler, int status) {
 
 	Package * result = NULL;
 
 	if (handler != NULL) {
-		if (handler->stato_articolo == pkgCode) {
+		if (handler->stato_articolo == status) {
 			result = handler;
 
 		} else {
-			result = getStoredPackage (handler->next, pkgCode);
+			result = getStoredPackage (handler->next, status);
 		}
 	}
 
 	return result;
 }
 
+int isEndOfMessage (char *string) {
+
+	return (strcmp (string, "EOM"));
+}
 /**
 funzione che prende in input l'handler della lista, il file di testo, il
  numero di token da analizzare.
@@ -195,46 +203,34 @@ funzione che prende in input l'handler della lista, il file di testo, il
  passa alla linea successiva.
  al termine, vengono liberate le stringhe temporanee.
 */
-Package * createList(Package *handler, int inputFile, int tokensNumber, Status status) {
-	char *string[tokensNumber];
+Package * createList(Package *handler, int inputFD, int tokensNumber, int status) {
+	char *str[tokensNumber];
 	int i;
-
+	int check = 1;
 	for (i = 0; i < tokensNumber; i++) {
-		string[i] = (char *) malloc (256);
-		memset (string[i], '\0', strlen (string[i]));
+		str[i] = (char *) malloc (256);
+		memset (str[i], '\0', strlen (str[i]));
 	}
 
 	char *strbuffer = malloc (256);	
 	memset (strbuffer, 0, strlen (strbuffer));
 
-	while ( (readLine (inputFile, strbuffer)) > 0 ) {
-/*
-		output per debug
-		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
-		write (STDOUT_FILENO, "\n", 1);
-*/		
-		getTokens (string, strbuffer, tokensNumber);
-/*
-		debug
-		memset (strbuffer, '\0', strlen (strbuffer));
-		write (STDOUT_FILENO, string[0], strlen (string[0]));
-		write (STDOUT_FILENO, "\n", 1);
-		output per debug
-		printf ("%s -> %s -> %s\n", string[0], string[1], string[2]);
-*/
-		/**implementazione in coda*/
-		//handler = pkg_enqueue (handler, string[0], string[1], string[2], status);
-		/**implementazione su pila*/
-		handler = pkg_push (handler, string[0], string[1], string[2], status);
-		for (i = 0; i < tokensNumber; i++)
-			memset (string[i], '\0', strlen (string[i]));
-
+	while ( (readLine (inputFD, strbuffer)) > 0 && check != 0) {
+		
+		getTokens (str, strbuffer, tokensNumber);
+		//check = isEndOfMessage(str[0]);
+		if ( check != 0) {
+			/**implementazione con push su "pila"*/
+			handler = pkg_push (handler, str, status);
+			for (i = 0; i < tokensNumber; i++)
+				memset (str[i], '\0', strlen (str[i]));
+		}
 	}
-	write (STDOUT_FILENO, "\n", 1);
-	close (inputFile);
+	//write (STDOUT_FILENO, "\n", 1);
+
 
 	for (i = 0; i < tokensNumber; i++)
-		free (string[i]);
+		free (str[i]);
 	free (strbuffer);
 	
 	return handler;
@@ -246,11 +242,11 @@ puntata.
 la funzione restituisce il numero di lettere lette nella linea per controllare
 che il file non sia terminato.
 */
-int readLine (int inputFileDes, char *strbuffer) {
-
+int readLine (int inputFD, char *strbuffer) {
+	memset (strbuffer, 0, strlen (strbuffer));
 	int	i = 0;
 	char c;
-	while ((read (inputFileDes, &c, 1)) > 0 && (c != '\n') ) {
+	while ((read (inputFD, &c, 1)) > 0 && (c != '\n') ) {
 		//if (c == '\r')
 		//	c = '\0';
 		strbuffer[i++] = c;
@@ -261,10 +257,9 @@ int readLine (int inputFileDes, char *strbuffer) {
 }
 
 /**
-la procedura prende in ingresso il puntatore all'array di stringhe,
-il puntatore alla stringa temporanea.
-il numero di token da leggere
-per ognuno dei 3 token da leggere, la funzione chiama getTocken.
+la procedura riempie un array di sottostringhe a partire da una
+singola stringa
+per ognuno dei token da leggere, la funzione chiama getTocken.
 */
 void getTokens (char *string[], char *strbuffer, int tokensNumber) {
 	int i = 0;
@@ -273,10 +268,10 @@ void getTokens (char *string[], char *strbuffer, int tokensNumber) {
 
 	
 	for (i = 0; i < tokensNumber -1 ; i++) {
-		strbuffer = getToken (string[i], strbuffer, '#', 1);
+		strbuffer = getSubstr (string[i], strbuffer, '#', 1);
 	}
 	
-	getToken (string[i], strbuffer, '\0', 0);		
+	getSubstr (string[i], strbuffer, '\0', 0);		
 }
 
 /**
@@ -290,7 +285,7 @@ a questo punto, se stepup == 1, allora verrà restituito il puntatore alla succe
 cella di memoria, in modo da poter superare il carattere di delimitazione e poter
 richiamare la stessa funzione sul resto della sottostringa.
 */
-char *getToken (char *result, char *input, char terminal, int stepup) {
+char *getSubstr (char *result, char *input, char terminal, int stepup) {
 	int i = 0;
 	char *punt;
 	
@@ -305,7 +300,7 @@ char *getToken (char *result, char *input, char terminal, int stepup) {
 
 /*===========================================================================*/
 /*
-2) operazioni su input
+2) operazioni su command line arguments
 */
 /*===========================================================================*/
 
@@ -350,7 +345,6 @@ int serverInputCheck (int argc, char **argv) {
 	//uso la funzione error per:
 	//1) scrivere su standard error
 	//2) richiamare un messaggio di errore standard
-
 
 	/* controllo valore operatori attivi*/
 	if ((test = checkArguments (argv[1], 1)) < 0) {
@@ -545,8 +539,8 @@ int getLine (int inputFD, char **cliCommands) {
 */
 /*===========================================================================*/
 
-
-int InitSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue) {
+/*inizializza il socket di comunicazione del server*/
+int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue) {
 
 	//creo il socket
 	int sockfd = socket(AF_INET , SOCK_STREAM , 0);
@@ -557,8 +551,7 @@ int InitSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue) {
 		write(STDOUT_FILENO, mess, strlen (mess));
 	}
 	write(STDOUT_FILENO, mess, strlen (mess));
-	 
-	//ma il server che indirizzo ip deve avere?!
+	
 	//preaparo la struttura sockaddr_in che contenga le informazioni di connessione
 	server = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 	server->sin_family = AF_INET;
@@ -588,7 +581,6 @@ int InitSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue) {
 			write (STDOUT_FILENO, "Bind eseguita.\n", strlen ("Bind eseguita.\n"));  
 	} while (bindErr < 0);
 
-	 
 	//avvio la Listen su un numero N di operatori
 	int listErr = listen(sockfd , maxOperatorsQueue);
 	if (listErr == -1)
@@ -605,7 +597,8 @@ int InitSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue) {
 
 /*===========================================================================*/
 
-int connectToServer (char **argv) {
+
+int initClientSocket (char **argv) {
 
 	char *address;
 	struct addrinfo hints, *res;
@@ -614,10 +607,11 @@ int connectToServer (char **argv) {
 	char *mess01 = "socket creato...\n";
 	char *mess02 = "connessione eseguita.\n";
 	char *mess03 = "impossibile connettersi.\n";
-	hints.ai_family	 = AF_INET; //protocollo ipv4
+	hints.ai_family		= AF_INET; //protocollo ipv4
 	hints.ai_socktype   = SOCK_STREAM; //tcp
-	hints.ai_flags	  = AI_PASSIVE; //INADDR_ANY
+	hints.ai_flags		= AI_PASSIVE; //INADDR_ANY
 	int sockfd;
+		//argv[1] = ip; argv[2] = port
 	if (getaddrinfo (argv[1], argv[2], &hints, &res) == -1)
 		perror ("Error1: "), exit (-1);
 	write (STDOUT_FILENO, mess00, strlen (mess00));
@@ -626,13 +620,13 @@ int connectToServer (char **argv) {
 		perror ("Error2: "), exit (-1);
 	write (STDOUT_FILENO, mess01, strlen (mess01));
 
-
 	int bindErr;
 	int timeout = 12;
 	while ((connect (sockfd, res->ai_addr, res->ai_addrlen) < 0) && timeout > 0) {
 		perror ("connect >  Nuovo tentativo di connessione tra 5 secondi"), sleep (5);
 		timeout++;
-	} 
+	}
+	//se il timeout scade il programma chiude
 	if (timeout == 0)
 		write (STDERR_FILENO, mess03, strlen (mess03)), exit (-1);
 	
@@ -660,8 +654,8 @@ char *encodePkgForTransmission (Package *handler) {
 /*===========================================================================*/
 
 
-initClient (int sockfd, Package *handler, int kPackages) {
-	//ATTENZIONE, QUI BISOGNA GESTIRE IL MUTEX GLOBALE!!!
+void threadClientInit (int sockfd, Package *handler, int kPackages) {
+
 	int i = 0;
 	char *message;
 	Package *current = handler;
@@ -673,45 +667,34 @@ initClient (int sockfd, Package *handler, int kPackages) {
 		if (current->stato_articolo == STORAGE) {
 			//leggi pacchetto
 			current->stato_articolo = TOBEDELIVERED;
+			pkg_print (current);
 			//codifica e invia pacchetto
 			message = encodePkgForTransmission (current);
 			write (sockfd, message, strlen (message));
 			current = current->next;
 			i++;
 			free (message);
-			usleep (500000);
+			//usleep (500000);
+			usleep (50000);
 		} else {
 			current = current->next;
 		}
 	}
 	pthread_mutex_unlock (&packageMutex);
-	write (sockfd, "INIT_END#", sizeof ("INIT_END#"));
+	write (sockfd, "EOM#\n", sizeof ("EOM##\0"));
 }
 
 void *connection_handler (void *parametri) {
-	
-/*	
-	int client_sock = *(int *)parametri;
-*/
-Passaggio *tmp = (Passaggio *)parametri;
+	signal(SIGPIPE ,SIG_IGN);
+	Passaggio *tmp = (Passaggio *)parametri;
 	int err0;
 	int err;
 	int i = 0;
 	int client_sock = tmp->sockfd;
 	int kPackages = tmp->kPackages;
 	Package *handler = tmp->handler;
-	//printf ("--%d---\n", tmp->sockfd);
-	initClient (client_sock, handler, kPackages);
-	/*
+	threadClientInit (client_sock, handler, kPackages);
 
-
-	signal(SIGPIPE,SIG_IGN);
-	while ( (err0 = send(client_sock, "A", 1, 0)) > 0) {
-
-		i++;			
-		sleep (1);		
-	}
-	*/
 	perror ("socket client: ");
 	write (STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ("\nfine comunicazioni\n"));	
 
@@ -722,13 +705,41 @@ Passaggio *tmp = (Passaggio *)parametri;
 	*/
 	pthread_mutex_lock (&maxThreadsMutex);
 	maxThread--;
-	/*codice di debug*/
-	/*
-	char message[20];
-	sprintf ( message,"nuovo maxThread: %d\n", maxThread);
-	write(STDERR_FILENO , message , strlen(message));	
-	*/
 	pthread_mutex_unlock (&maxThreadsMutex);
 
 	return((void *)0); 
+}
+
+Package * createListA (Package *handler, int inputFD, int tokensNumber, int status) {
+	char *str[tokensNumber];
+	int i;
+	int check = 1;
+	for (i = 0; i < tokensNumber; i++) {
+		str[i] = (char *) malloc (256);
+		memset (str[i], '\0', strlen (str[i]));
+	}
+
+	char *strbuffer = malloc (256);	
+	memset (strbuffer, 0, strlen (strbuffer));
+	char *ptr;
+	while ( (readLine (inputFD, strbuffer)) > 0 && check != 0) {
+		if ( (ptr = strstr (strbuffer, "EOM")) == NULL)
+			break;	
+		getTokens (str, strbuffer, tokensNumber);
+		check = isEndOfMessage(str[0]);
+		if ( check != 0) {
+			/**implementazione con push su "pila"*/
+			handler = pkg_push (handler, str, status);
+
+			for (i = 0; i < tokensNumber; i++)
+				memset (str[i], '\0', strlen (str[i]));
+		}
+	}
+	//write (STDOUT_FILENO, "\n", 1);
+
+	for (i = 0; i < tokensNumber; i++)
+		free (str[i]);
+	free (strbuffer);
+	
+	return handler;
 }

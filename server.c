@@ -35,6 +35,7 @@ int main (int argc , char *argv[]) {
 		perror ("Impossibile allocare il mutex per la lista"), exit (-1);
 
 	handler = (Package *) createList (handler, inputFD, tokensNumber, status);
+	close (inputFD);
 	//pkglist_print (handler);
 	//return 0;
 	struct sockaddr_in *server , client;
@@ -43,17 +44,17 @@ int main (int argc , char *argv[]) {
 	int port = randomIntGenerator (1024, 1030);
 	//int port = randomIntGenerator (1024, 49150);
 
-
 	//maxOperatorsQueue indica quanti operatori al massimo
 	//possno essere accodati sulla listen prima di essere
 	//accettati.
-	sockfd = InitSocket (server, port, maxOperatorsQueue);
+	sockfd = InitServerSocket (server, port, maxOperatorsQueue);
 
 	connectionManager (sockfd, opNumber, kPackages, handler, client, clientsize);
 
 	close (sockfd);
 	pthread_mutex_destroy(&maxThreadsMutex);
-	perror ("fine programma");
+	pthread_mutex_destroy(&packageMutex);
+	perror ("esecuzione terminata");
 	return 0;
 }
 
