@@ -10,7 +10,12 @@ char *cliCommands[5] = {
 
 Package *initClient (int sockfd, Package *handler) {
 	//pkg handler, socket, tokens, status
-	handler = createListA  (handler, sockfd,  4, -1);
+	//initClient si mette in attesa di ricevere pacchetti, anche
+	//se il server ne è momentaneamene sprovvisto
+	while ((handler = createList (handler, sockfd,  4, -1)) == NULL) {
+		usleep (50000);
+	}
+
 	pkglist_print (handler);
 
 	return handler;
@@ -18,54 +23,22 @@ Package *initClient (int sockfd, Package *handler) {
 
 int main(int argc, char **argv) {
 
+	char mess[] 	= "inizializzazione terminata.\n";
+	char mess1[] 	= "comando-> ";
 	clientInputCheck(argc, argv);
 	int sockfd = initClientSocket (argv);
 	Package *handler = NULL;
 	handler = initClient (sockfd, handler);
-
-	write (STDOUT_FILENO, "ok\n", 3);
+	write (STDOUT_FILENO, mess, strlen (mess));
+	while (handler != NULL) {
+		write (STDOUT_FILENO, mess1, strlen (mess1));	
+		showMenu();
+		int command = getLine (STDIN_FILENO, cliCommands);
+		commandSwitch (command, handler, sockfd);
+	}
+	write (STDOUT_FILENO, "Ciao!\n", 6);
 	close (sockfd);
 
 	return 0;
 }
 
-
-
-	//leggo da stdin
-	//estrapolo il primo token
-	//lo comparo con l'array client
-	//estraggo l'indice dell'array
-	//switcho sui 5 casi possibili
-/*
-int command = getLine (STDIN_FILENO, cliCommands);
-
-int inputFD = open ("test.txt", O_RDONLY);
-int tokensNumber = 3;
-Status status = DELIVERED;
-handler = (Package *) createList (handler, inputFD, tokensNumber, status);
-commandSwitch (command, handler);
-*/
-/*
-void getLineA (int inputFD) {
-	char *strbuffer = malloc (256);
-	memset (strbuffer, 0, strlen (strbuffer));
-	int inputFile = 0;
-	int rVar = getLine (inputFile, strbuffer);
-}
-*/
-/*
-void initializeClient (Package *handler, int clientSock, int kPackages) {
-
-	int i = 0;
-	Package *temp = NULL;
-	Status stat = STORAGE;
-	while (i < kPackages) {
-		temp = getStoredPackage (handler, DELIVERED);
-		temp->stato_articolo = TOBEDELIVERED;
-	//	if (temp != NULL)
-	//		pkg_print (temp);
-	}
-
-}
-
-*/

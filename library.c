@@ -203,31 +203,32 @@ funzione che prende in input l'handler della lista, il file di testo, il
  passa alla linea successiva.
  al termine, vengono liberate le stringhe temporanee.
 */
-Package * createList(Package *handler, int inputFD, int tokensNumber, int status) {
+
+Package * createList (Package *handler, int inputFD, int tokensNumber, int status) {
 	char *str[tokensNumber];
 	int i;
 	int check = 1;
+	char *ptr;
 	for (i = 0; i < tokensNumber; i++) {
 		str[i] = (char *) malloc (256);
 		memset (str[i], '\0', strlen (str[i]));
 	}
-
 	char *strbuffer = malloc (256);	
 	memset (strbuffer, 0, strlen (strbuffer));
-
-	while ( (readLine (inputFD, strbuffer)) > 0 && check != 0) {
-		
-		getTokens (str, strbuffer, tokensNumber);
-		//check = isEndOfMessage(str[0]);
-		if ( check != 0) {
+	while (check != 0 && (readLine (inputFD, strbuffer)) > 0) {
+		//funzione di libreria che cerca una sottostringa
+		//in una sottostringa e restituisce il puntatore
+		ptr = strstr (strbuffer, "EOM#");
+		if (ptr == NULL) {
+			getTokens (str, strbuffer, tokensNumber);
 			/**implementazione con push su "pila"*/
 			handler = pkg_push (handler, str, status);
 			for (i = 0; i < tokensNumber; i++)
 				memset (str[i], '\0', strlen (str[i]));
-		}
+			memset (strbuffer, 0, strlen (strbuffer));
+		} else
+			check = 0;	
 	}
-	//write (STDOUT_FILENO, "\n", 1);
-
 
 	for (i = 0; i < tokensNumber; i++)
 		free (str[i]);
@@ -235,7 +236,6 @@ Package * createList(Package *handler, int inputFD, int tokensNumber, int status
 	
 	return handler;
 }
-
 /**
 prende in ingresso una linea del file di testo e la salva in una stringa
 puntata.
@@ -460,7 +460,18 @@ void clientInputCheck (int argc, char **argv) {
 	riconosci comando
 */
 /*===========================================================================*/
-void commandSwitch (int command, Package *handler) {
+
+
+void showMenu () {
+    char menu[]			= "ELENCO COMANDI:\n\n";
+    char elenca[]		= "elenca:\n	Elenca le informazioni degli oggetti che l'operatore deve ancora gestire\n";
+    char elserver[]		= "elencaserver:\n 	Richiede al SERVER l'elenco completo degli articoli\n";
+    char consegnato[]	= "consegnato#codice:\n	Informa il SERVER della consegna ed elimina l'articolo dall'elenco locale\n";
+    char ritirato[] 	= "ritirato#codice#descrizione#indirizzo:\n 	Informa il SERVER del ritiro di un nuovo oggetto ed aggiunge l'articolo nell'elenco locale\n";
+    char smista[] 		= "smista#codice:\n 	Informa il SERVER della consegna in magazzino ed elimina l'articolo dall'elenco locale\n";
+}
+
+void commandSwitch (int command, Package *handler, int sockfd) {
 	char *err01 = "warning! comando non valido!\n";
 
 	switch (command) {
@@ -468,6 +479,7 @@ void commandSwitch (int command, Package *handler) {
 		case ELENCASERVER:
 		/*ELENCA STAMPA LA LISTA REMOTA*/
 			write (STDOUT_FILENO, "elencaserver\n", strlen ("elencaserver\n"));
+			elencaClientToServer (sockfd);
 		break;
 		case CONSEGNATO:
 			write (STDOUT_FILENO, "consegnato\n", strlen ("consegnato\n"));
@@ -492,7 +504,7 @@ void commandSwitch (int command, Package *handler) {
 int commandToHash (char *command, char **cliCommands) {
 	int i = 0;
 	int k = 0;
-	while ( i < 5 && (strcmp (command, cliCommands[i++]) != 0))
+	while ( i < 5 && (strcasecmp (command, cliCommands[i++]) != 0))
 		k++;
 		//printf ("k: %d", k);
 	return k;
@@ -681,7 +693,7 @@ void threadClientInit (int sockfd, Package *handler, int kPackages) {
 		}
 	}
 	pthread_mutex_unlock (&packageMutex);
-	write (sockfd, "EOM#\n", sizeof ("EOM#\0"));
+	write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
 }
 
 void *connection_handler (void *parametri) {
@@ -708,35 +720,4 @@ void *connection_handler (void *parametri) {
 	pthread_mutex_unlock (&maxThreadsMutex);
 
 	return((void *)0); 
-}
-
-Package * createListA (Package *handler, int inputFD, int tokensNumber, int status) {
-	char *str[tokensNumber];
-	int i;
-	int check = 1;
-	char *ptr;
-	for (i = 0; i < tokensNumber; i++) {
-		str[i] = (char *) malloc (256);
-		memset (str[i], '\0', strlen (str[i]));
-	}
-	char *strbuffer = malloc (256);	
-	memset (strbuffer, 0, strlen (strbuffer));
-	while (check != 0 && (readLine (inputFD, strbuffer)) > 0) {
-		ptr = strstr(strbuffer, "EOM#");
-		if (ptr == NULL) {
-			getTokens (str, strbuffer, tokensNumber);
-			/**implementazione con push su "pila"*/
-			handler = pkg_push (handler, str, status);
-			for (i = 0; i < tokensNumber; i++)
-				memset (str[i], '\0', strlen (str[i]));
-			memset (strbuffer, 0, strlen (strbuffer));
-		} else
-			check = 0;	
-	}
-
-	for (i = 0; i < tokensNumber; i++)
-		free (str[i]);
-	free (strbuffer);
-	
-	return handler;
 }
