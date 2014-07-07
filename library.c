@@ -214,6 +214,8 @@ funzione che prende in input l'handler della lista, il file di testo, il
 */
 
 Package * createList (Package *handler, int inputFD, int tokensNumber, int status) {
+	//array semidinamico: riceve l'input dalla funzione
+	//chiamante
 	char *str[tokensNumber];
 	int i;
 	int check = 1;
@@ -404,7 +406,7 @@ la funzione restituisce:
 
 int isValidIpAddress (char *ipAddress) {
 	struct sockaddr_in test;
-	int res = inet_pton(AF_INET, ipAddress, &(test.sin_addr));
+	int res = inet_pton (AF_INET, ipAddress, &(test.sin_addr));
 	if (res != 1)
 		error (0, EINVAL, "indirizzo ip non valido");
 	return res;
@@ -472,12 +474,19 @@ void clientInputCheck (int argc, char **argv) {
 
 
 void showMenu () {
-    char menu[]			= "ELENCO COMANDI:\n\n";
-    char elenca[]		= "elenca:\n	Elenca le informazioni degli oggetti che l'operatore deve ancora gestire\n";
-    char elserver[]		= "elencaserver:\n 	Richiede al SERVER l'elenco completo degli articoli\n";
-    char consegnato[]	= "consegnato#codice:\n	Informa il SERVER della consegna ed elimina l'articolo dall'elenco locale\n";
-    char ritirato[] 	= "ritirato#codice#descrizione#indirizzo:\n 	Informa il SERVER del ritiro di un nuovo oggetto ed aggiunge l'articolo nell'elenco locale\n";
-    char smista[] 		= "smista#codice:\n 	Informa il SERVER della consegna in magazzino ed elimina l'articolo dall'elenco locale\n";
+
+	char buff[256];
+	int check = 0;
+    char menu[]			= "ELENCO COMANDI:";
+    char elenca[]		= "elenca:\n\n	Elenca le informazioni degli oggetti che l'operatore deve ancora gestire";
+    char elserver[]		= "elencaserver:\n\n 	Richiede al SERVER l'elenco completo degli articoli";
+    char consegnato[]	= "consegnato#codice:\n\n	Informa il SERVER della consegna ed elimina l'articolo dall'elenco locale";
+    char ritirato[] 	= "ritirato#codice#descrizione#indirizzo:\n\n 	Informa il SERVER del ritiro di un nuovo oggetto ed aggiunge l'articolo nell'elenco locale";
+    char smista[] 		= "smista#codice:\n\n 	Informa il SERVER della consegna in magazzino ed elimina l'articolo dall'elenco locale";
+
+	char string[1204];
+	sprintf (string, "\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n", menu, elenca, elserver, consegnato, ritirato, smista);
+	write (STDOUT_FILENO, string, strlen (string));
 }
 
 
@@ -508,13 +517,14 @@ int getLine (int inputFD, char **cmdPointer) {
 	int command;
 	char *test;
 	char *string = (char *) malloc (256 * sizeof (char));
-	memset (string, '\0', strlen (string));
+	memset (string, 0, strlen (string));
 	char *strbuffer = (char *) malloc (256 * sizeof (char));
-	memset (strbuffer, '\0', strlen (string));		
+	memset (strbuffer, 0, strlen (string));		
 
 	if ( (rVar = readLine (inputFD, strbuffer)) > 0 ) {
 		getCommand (string, strbuffer);
 		command = commandToHash (string);
+		sprintf (strbuffer, "%s\n", strbuffer);
 		*cmdPointer = strbuffer;
 	}
 	return command;
@@ -581,42 +591,6 @@ int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueu
 
 /*===========================================================================*/
 
-
-int initClientSocket (char **argv) {
-
-	char *address;
-	struct addrinfo hints, *res;
-	memset (&hints, 0, sizeof (hints));
-	char *mess00 = "ip agganciato...\n";
-	char *mess01 = "socket creato...\n";
-	char *mess02 = "connessione eseguita.\n";
-	char *mess03 = "impossibile connettersi.\n";
-	hints.ai_family		= AF_INET; //protocollo ipv4
-	hints.ai_socktype   = SOCK_STREAM; //tcp
-	hints.ai_flags		= AI_PASSIVE; //INADDR_ANY
-	int sockfd;
-		//argv[1] = ip; argv[2] = port
-	if (getaddrinfo (argv[1], argv[2], &hints, &res) == -1)
-		perror ("Error1: "), exit (-1);
-	write (STDOUT_FILENO, mess00, strlen (mess00));
-	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if (sockfd == -1)
-		perror ("Error2: "), exit (-1);
-	write (STDOUT_FILENO, mess01, strlen (mess01));
-
-	int bindErr;
-	int timeout = 12;
-	while ((connect (sockfd, res->ai_addr, res->ai_addrlen) < 0) && timeout > 0) {
-		perror ("connect >  Nuovo tentativo di connessione tra 5 secondi"), sleep (5);
-		timeout++;
-	}
-	//se il timeout scade il programma chiude
-	if (timeout == 0)
-		write (STDERR_FILENO, mess03, strlen (mess03)), exit (-1);
-	
-	write (STDOUT_FILENO, mess02, strlen (mess02));
-	return sockfd;
-}
 
 /*===========================================================================*/
 

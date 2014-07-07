@@ -109,4 +109,8 @@ void talkWithClient (int client_sock, Package *handler);
 void elencaserver_client (int sockfd, char *cmdPointer);
 void elencaserver_server (int sockfd, Package *handler);
 void commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd);
+int checkRitiratoCommand (char *strbuffer);
+void ritirato_server (int sockfd, char *cmdPointer, Package *handler);
+void ritirato_client (int sockfd, char *strbuffer, Package *handler);
+
 #endif

@@ -1,7 +1,7 @@
 #include "library.h"
 
 void threadClientInit (int sockfd, Package *handler, int kPackages) {
-
+	write (STDOUT_FILENO, "Init iniziata\n", 14);
 	int i = 0;
 	char *message;
 	Package *current = handler;
@@ -28,8 +28,10 @@ void threadClientInit (int sockfd, Package *handler, int kPackages) {
 	}
 	pthread_mutex_unlock (&packageMutex);
 	write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
+	write (STDOUT_FILENO, "Init Terminata\n", 15);
 }
 
+/*THREAD CONNESSIONE*/
 void *thread_connection_handler (void *parametri) {
 	signal(SIGPIPE ,SIG_IGN);
 	Passaggio *tmp = (Passaggio *)parametri;
@@ -40,10 +42,9 @@ void *thread_connection_handler (void *parametri) {
 	int kPackages = tmp->kPackages;
 	Package *handler = tmp->handler;
 	threadClientInit (client_sock, handler, kPackages);
-	//talkWithClient(client_sock, handler);
+	talkWithClient(client_sock, handler);
 	perror ("socket client: ");
 	write (STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ("\nfine comunicazioni\n"));	
-
 	/*
 	all'uscita del thread, lo elimino dalla "coda" dei thread attivi e libero
 	uno slot per la connessione. impiego il mutex per poter scrivere sulla
@@ -57,14 +58,21 @@ void *thread_connection_handler (void *parametri) {
 }
 
 void talkWithClient (int client_sock, Package *handler) {
-	//while (1) {
-/*
-		char *cmdPointer;
-		memset (cmdPointer, 0, 256 * sizeof (char)); 	
-		int command = getLine (client_sock, cmdPointer);
-		commandSwitchServer (command, cmdPointer, handler, client_sock);
-*/	
-	//}
+	int command;
+	while (1) {
+		write (STDOUT_FILENO, "\nmessaggio in arrivo:\n", 22);
+		char *strbuffer;
+		command = getLine (client_sock, &strbuffer);
+		//output per debug
+		
+		write (STDOUT_FILENO, "getline: ", sizeof ("getline: "));		
+		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
+		write (STDOUT_FILENO, "\n", 1);	
+		commandSwitchServer (command, strbuffer, handler, client_sock);
+		free (strbuffer);
+		write (STDOUT_FILENO, "\nmessaggio terminato\n", 20);
+		command = -1;
+	}
 
 }
 
@@ -74,7 +82,9 @@ void commandSwitchServer (int command, char *cmdPointer,
 	char *err01 = "warning! comando non valido!\n";
 
 	switch (command) {
-
+		case -1:
+			write (STDOUT_FILENO, err01, strlen (err01));
+		break;
 		case ELENCASERVER:
 		/*ELENCA STAMPA LA LISTA REMOTA*/
 			write (STDOUT_FILENO, "elencaserver\n", strlen ("elencaserver\n"));
@@ -85,14 +95,12 @@ void commandSwitchServer (int command, char *cmdPointer,
 		break;
 		case RITIRATO:
 			write (STDOUT_FILENO, "ritirato\n", strlen ("ritirato\n"));
+			ritirato_server (sockfd, cmdPointer, handler);
+			//pkglist_print (handler);
 		break;
 		case SMISTA:
 			write (STDOUT_FILENO, "smista\n", strlen ("smista\n"));
-		break;
-		case ELENCA:
-		/*ELENCA STAMPA LA LISTA LOCALE*/
-			write (STDOUT_FILENO, "elenca:\n", strlen ("elenca:\n"));
-		break;						
+		break;					
 		default:
 			write (STDOUT_FILENO, err01, strlen (err01));
 		break;
@@ -110,22 +118,48 @@ void elencaserver_server (int sockfd, Package *handler) {
 	}
 	pthread_mutex_lock (&packageMutex);
 	while (current != NULL) {
-		if (current->stato_articolo == STORAGE) {
+		
 			//leggi pacchetto
 			pkg_print (current);
 			//codifica e invia pacchetto
 			message = encodePkgForTransmission (current);
 			write (sockfd, message, strlen (message));
-			current = current->next;
 			i++;
 			free (message);
 			//usleep (500000);
 			usleep (50000);
-		} else {
 			current = current->next;
-		}
 	}
 	pthread_mutex_unlock (&packageMutex);
 	write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
 
 }
+
+void ritirato_server (int sockfd, char *strbuffer, Package *handler) {
+	write (STDOUT_FILENO, "articolo in ritiro: ", sizeof ("articolo in ritiro: "));		
+	write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
+	write (STDOUT_FILENO, "\n", 1);	
+	/*int tokensNumber = 4;
+	char *str[tokensNumber];
+	int i;
+	int check = 1;
+	char *ptr;
+	for (i = 0; i < tokensNumber; i++) {
+		str[i] = (char *) malloc (256 * sizeof (char));
+		memset (str[i], '\0', strlen (str[i]));
+	}
+	Status status = COLLECTED;
+	getTokens (str, strbuffer, tokensNumber);
+*/	
+/**implementazione con push su "pila"*/
+/*	pthread_mutex_lock (&packageMutex);
+	handler = pkg_enqueue (handler, str, status);
+	pthread_mutex_unlock (&packageMutex);
+	
+	for (i = 0; i < tokensNumber; i++)
+		free (str[i]);
+	free (strbuffer);
+*/
+}
+
+//handler = createList (handler, sockfd,  4, -1)

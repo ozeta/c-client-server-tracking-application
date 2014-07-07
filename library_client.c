@@ -1,20 +1,59 @@
 #include "library.h"
 
+
+int initClientSocket (char **argv) {
+
+	char *address;
+	struct addrinfo hints, *res;
+	memset (&hints, 0, sizeof (hints));
+	char *mess00 = "ip agganciato...\n";
+	char *mess01 = "socket creato...\n";
+	char *mess02 = "connessione eseguita.\n\n";
+	char *mess03 = "impossibile connettersi.\n";
+	hints.ai_family		= AF_INET; //protocollo ipv4
+	hints.ai_socktype   = SOCK_STREAM; //tcp
+	hints.ai_flags		= AI_PASSIVE; //INADDR_ANY
+	int sockfd;
+		//argv[1] = ip; argv[2] = port
+	if (getaddrinfo (argv[1], argv[2], &hints, &res) == -1)
+		perror ("Error1: "), exit (-1);
+	write (STDOUT_FILENO, mess00, strlen (mess00));
+	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (sockfd == -1)
+		perror ("Error2: "), exit (-1);
+	write (STDOUT_FILENO, mess01, strlen (mess01));
+
+	int bindErr;
+	int timeout = 12;
+	while ((connect (sockfd, res->ai_addr, res->ai_addrlen) < 0) && timeout > 0) {
+		perror ("connect >  Nuovo tentativo di connessione tra 5 secondi"), sleep (5);
+		timeout++;
+	}
+	//se il timeout scade il programma chiude
+	if (timeout == 0)
+		write (STDERR_FILENO, mess03, strlen (mess03)), exit (-1);
+	
+	write (STDOUT_FILENO, mess02, strlen (mess02));
+	return sockfd;
+}
+
+
 void commandSwitch (int command, char *strbuffer, Package *handler, int sockfd) {
 	char *err01 = "warning! comando non valido!\n";
 
 	switch (command) {
 
 		case ELENCASERVER:
-		/*ELENCA STAMPA LA LISTA REMOTA*/
+		/*STAMPA LA LISTA REMOTA*/
 			write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
-			//elencaserver_client (sockfd, strbuffer);
+			elencaserver_client (sockfd, strbuffer);
 		break;
 		case CONSEGNATO:
 			write (STDOUT_FILENO, "switch-> consegnato\n", strlen ("switch-> consegnato\n"));
 		break;
 		case RITIRATO:
 			write (STDOUT_FILENO, "switch-> ritirato\n", strlen ("switch-> ritirato\n"));
+			ritirato_client (sockfd, strbuffer, handler);
 		break;
 		case SMISTA:
 			write (STDOUT_FILENO, "switch-> smista\n", strlen ("switch-> smista\n"));
@@ -38,8 +77,10 @@ void elencaserver_client (int sockfd, char *cmdPointer) {
 	char *ptr;
 	char c[5];
 	write (sockfd, cmdPointer, strlen (cmdPointer));
+	//write (sockfd, "\n", 1);
 	char *strbuffer = (char *) malloc (256 * sizeof (char));	
 	memset (strbuffer, 0, strlen (strbuffer));
+	
 	while (check != 0 && (readLine (sockfd, strbuffer)) > 0) {
 		//funzione di libreria che cerca una sottostringa
 		//in una sottostringa e restituisce il puntatore
@@ -53,5 +94,90 @@ void elencaserver_client (int sockfd, char *cmdPointer) {
 	}
 
 	free (strbuffer);
+}
+
+
+int checkRitiratoCommand (char *strbuffer) {
+
+	int i = 0;
+	int end = strlen (strbuffer);
+	int res = 0;
+	while (i < end) {
+		if (strbuffer[i] == '#')
+			res++;	
+		i++;
+	}
+
+	if (res == 3)
+		return 1;
+	else
+		return 0;
+}
+
+void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
+	//array semidinamico: riceve l'input dalla funzione
+	//chiamante
+	int check;
+	if ((check = checkRitiratoCommand (strbuffer)) != 0) {
+
+		int tokensNumber = 3;
+		char *str[tokensNumber];
+		int lenght = strlen (strbuffer);
+		strbuffer[lenght-1] = '\0';
+		int i;
+		for (i = 0; i < tokensNumber; i++) {
+			str[i] = (char *) malloc (256 * sizeof (char));
+			memset (str[i], '\0', strlen (str[i]));
+		}
+		Status status = COLLECTED;
+		getTokens (str, &strbuffer[9], tokensNumber);
+		handler = pkg_enqueue (handler, str, status);
+		pkg_print (handler);
+		write (sockfd, strbuffer, strlen (strbuffer));
+	} else {
+		char warn1[] = "attenzione, comando non corretto\n";
+		char warn2[] = "ritirato#codice#descrizione#indirizzo\n";
+		write (STDOUT_FILENO, warn1, strlen (warn1));
+		write (STDOUT_FILENO, warn2, strlen (warn2));
+	}
+}
+
+void ritirato_clientA (int sockfd, char *strbuffer, Package *handler) {
+
+
+	int u = 0;
+	write (sockfd, strbuffer, strlen (strbuffer));
+	while (strbuffer[u] != '\n') {
+		u++;
+	}
+	strbuffer[u] = '\0';
+//ritirato#pkg#desc#via\0
+	int i;
+	int tokensNumber = 3;
+	char *str[tokensNumber];
+	char *message;
+
+	for (i = 0; i < tokensNumber; i++) {
+		str[i] = (char *) malloc (256 * sizeof (char));
+		memset (str[i], '\0', strlen (str[i]));
+	}
+
+	char *ptr = strstr (strbuffer, "#");
+	ptr++;
+	getTokens (str, ptr, tokensNumber);
+	int status = COLLECTED;
+	handler = pkg_enqueue (handler, str, status);
+	for (i = 0; i < tokensNumber; i++)
+		memset (str[i], '\0', strlen (str[i]));
+	pkg_print (handler);
+
+
+	message = encodePkgForTransmission (handler);
+	write (sockfd, message, strlen (message));
+	//write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
+	free (message);
+
+/*
+*/
 
 }

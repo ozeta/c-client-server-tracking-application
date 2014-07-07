@@ -16,19 +16,17 @@ Package *initClient (int sockfd, Package *handler) {
 
 int main(int argc, char **argv) {
 
-	char mess[] 	= "inizializzazione terminata.\n";
+	char mess[] 	= "\ninizializzazione terminata.\n";
 	char mess1[] 	= "comando-> ";
 	clientInputCheck(argc, argv);
 	int sockfd = initClientSocket (argv);
 	Package *handler = NULL;
 	handler = initClient (sockfd, handler);
-	//pkglist_print (handler);
 	write (STDOUT_FILENO, mess, strlen (mess));
 	while (handler != NULL) {
-		write (STDOUT_FILENO, mess1, strlen (mess1));	
-
-		showMenu();
+		//showMenu();
 		char *strbuffer;
+		write (STDOUT_FILENO, mess1, strlen (mess1));	
 		int command = getLine (STDIN_FILENO, &strbuffer);
 		//output per debug
 		/*

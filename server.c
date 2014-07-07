@@ -59,32 +59,14 @@ void connectionManager (int sockfd, int opNumber, int kPackages, Package *handle
 					} else
 						perror ("server-mutex: errore");
 
-					//write (STDOUT_FILENO, tids, strlen (tids));	 
-					//write (STDOUT_FILENO, mess01, strlen (mess01));
-				
-					//pthread_join (thread_arr[maxThread] , NULL);
 				} else 
 					perror ("impossibile creare il thread");
 			//
 			} else {
 				perror ("impossibile accettare la connessione");
 			}
-
 		}
-		/*
-		int err = pthread_mutex_lock (&maxThreadsMutex);
-
-		sprintf (tids, "thread correnti: [%d] \n", maxThread);
-		err = pthread_mutex_unlock (&maxThreadsMutex);
-		
-		write (STDOUT_FILENO, tids, strlen (tids));	
-		memset (tids, '\0', strlen (tids));
-		sleep (1);
-		*/
-		//free (param_pass);
-		
 	}
-
 }
 
 
