@@ -28,11 +28,16 @@ int main(int argc, char **argv) {
 		write (STDOUT_FILENO, mess1, strlen (mess1));	
 
 		showMenu();
-		char *cmdPointer;
-
-		int command = getLine (STDIN_FILENO, cmdPointer);
-		commandSwitch (command, cmdPointer, handler, sockfd);
-		free (cmdPointer);
+		char *strbuffer;
+		int command = getLine (STDIN_FILENO, &strbuffer);
+		//output per debug
+		/*
+		write (STDOUT_FILENO, "getline: ", sizeof ("getline: "));		
+		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
+		write (STDOUT_FILENO, "\n", 1);	
+		*/
+		commandSwitch (command, strbuffer, handler, sockfd);
+		free (strbuffer);
 	}
 	write (STDOUT_FILENO, "Ciao!\n", 6);
 	close (sockfd);

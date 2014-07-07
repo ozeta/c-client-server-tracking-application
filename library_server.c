@@ -40,7 +40,7 @@ void *thread_connection_handler (void *parametri) {
 	int kPackages = tmp->kPackages;
 	Package *handler = tmp->handler;
 	threadClientInit (client_sock, handler, kPackages);
-	talkWithClient(client_sock, handler);
+	//talkWithClient(client_sock, handler);
 	perror ("socket client: ");
 	write (STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ("\nfine comunicazioni\n"));	
 
@@ -58,10 +58,12 @@ void *thread_connection_handler (void *parametri) {
 
 void talkWithClient (int client_sock, Package *handler) {
 	//while (1) {
+/*
 		char *cmdPointer;
 		memset (cmdPointer, 0, 256 * sizeof (char)); 	
 		int command = getLine (client_sock, cmdPointer);
 		commandSwitchServer (command, cmdPointer, handler, client_sock);
+*/	
 	//}
 
 }

@@ -1,27 +1,27 @@
 #include "library.h"
 
-void commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd) {
+void commandSwitch (int command, char *strbuffer, Package *handler, int sockfd) {
 	char *err01 = "warning! comando non valido!\n";
 
 	switch (command) {
 
 		case ELENCASERVER:
 		/*ELENCA STAMPA LA LISTA REMOTA*/
-			write (STDOUT_FILENO, cmdPointer, strlen (cmdPointer));
-			//elencaserver_client (sockfd, cmdPointer);
+			write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
+			//elencaserver_client (sockfd, strbuffer);
 		break;
 		case CONSEGNATO:
-			write (STDOUT_FILENO, "consegnato\n", strlen ("consegnato\n"));
+			write (STDOUT_FILENO, "switch-> consegnato\n", strlen ("switch-> consegnato\n"));
 		break;
 		case RITIRATO:
-			write (STDOUT_FILENO, "ritirato\n", strlen ("ritirato\n"));
+			write (STDOUT_FILENO, "switch-> ritirato\n", strlen ("switch-> ritirato\n"));
 		break;
 		case SMISTA:
-			write (STDOUT_FILENO, "smista\n", strlen ("smista\n"));
+			write (STDOUT_FILENO, "switch-> smista\n", strlen ("switch-> smista\n"));
 		break;
 		case ELENCA:
 		/*ELENCA STAMPA LA LISTA LOCALE*/
-			write (STDOUT_FILENO, "elenca:\n", strlen ("elenca:\n"));
+			write (STDOUT_FILENO, "switch-> elenca:\n", strlen ("switch-> elenca:\n"));
 			pkglist_print (handler);
 		break;						
 		default:

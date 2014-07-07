@@ -98,7 +98,8 @@ void commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd)
 void commandSwitchServer (int command, char *cmdPointer, Package *handler, int sockfd);
 int commandToHash (char *command);
 void getCommand (char *string, const char *strbuffer);
-int getLine (int inputFD, char *cmdPointer);
+int getLineA (int inputFD, char *cmdPointer, char **test);
+int getLine (int inputFD, char **cmdPointer);
 int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue);
 int initClientSocket (char **argv);
 char *encodePkgForTransmission (Package *handler);

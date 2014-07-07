@@ -70,8 +70,8 @@ void pkg_print (Package *handler) {
 			case COLLECTED: strcpy (status, "COLLECTED"); break;
 			default: strcpy (status, "boh?"); break;
 		}
-
-		sprintf (message, "Item= %s , %s , %s . STATO: %s\n", handler->codice_articolo,
+		sprintf (message, "%s , %s , %s . STATO: %s\n", handler->codice_articolo,
+//		sprintf (message, "Item= %s , %s , %s . STATO: %s\n", handler->codice_articolo,
 				handler->descrizione_articolo,
 				handler->indirizzo_destinazione,
 				status);	
@@ -501,24 +501,21 @@ void getCommand (char *string, const char *strbuffer) {
 	}
 	
 }
-int getLine (int inputFD, char *cmdPointer) {
+
+int getLine (int inputFD, char **cmdPointer) {
 
 	int rVar = 1;
 	int command;
+	char *test;
 	char *string = (char *) malloc (256 * sizeof (char));
-	memset (string, '\0', strlen (string));	
-	char *strbuffer = (char *) malloc (256 * sizeof (char));	
-	memset (strbuffer, 0, strlen (strbuffer));
+	memset (string, '\0', strlen (string));
+	char *strbuffer = (char *) malloc (256 * sizeof (char));
+	memset (strbuffer, '\0', strlen (string));		
 
 	if ( (rVar = readLine (inputFD, strbuffer)) > 0 ) {
-
-		//output per debug
-		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
-		write (STDOUT_FILENO, "\n", 1);
-		
 		getCommand (string, strbuffer);
 		command = commandToHash (string);
-		cmdPointer = strbuffer;
+		*cmdPointer = strbuffer;
 	}
 	return command;
 }
@@ -535,7 +532,7 @@ int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueu
 
 	//creo il socket
 	int sockfd = socket(AF_INET , SOCK_STREAM , 0);
-	char mess[] = "Socket creato";
+	char mess[] = "Socket creato...\n";
 	if (sockfd == -1)
 	{
 		char mess[] = "Non è possibile creare il socket";
@@ -547,11 +544,7 @@ int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueu
 	server = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 	server->sin_family = AF_INET;
 	server->sin_addr.s_addr = INADDR_ANY;
-//	server->sin_port = htons( 8888 );
- 	if (port == -1)
-		server->sin_port = htons( 8888 );
-	else
-		server->sin_port = htons ( port );
+	server->sin_port = htons ( port );
 	
 	//effettuo la Bind e gestisco l'eventuale errore
 	//questo ciclo tenta la bind nel caso in cui non la porta non sia libera
