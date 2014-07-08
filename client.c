@@ -9,7 +9,7 @@ Package *initClient (int sockfd, Package *handler) {
 		usleep (50000);
 	}
 
-	pkglist_print (handler);
+	//pkglist_print (handler);
 
 	return handler;
 }

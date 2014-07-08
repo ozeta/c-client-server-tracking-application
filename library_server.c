@@ -5,28 +5,37 @@ void threadClientInit (int sockfd, Package *handler, int kPackages) {
 	int i = 0;
 	char *message;
 	Package *current = handler;
+	//ATTENZIONE CONTROLLA CHE QUESTA CLAUSOLA FUNZIONI
+	//IMPLEMENTARE COMANDO SMISTA
 	if (current == NULL) {
 		while (current == NULL);
 	}
-	pthread_mutex_lock (&packageMutex);
+	//pthread_mutex_lock (&packageMutex);
 	while (current != NULL && i < kPackages) {
 		if (current->stato_articolo == STORAGE) {
+			pthread_mutex_lock (&current->m_lock);
 			//leggi pacchetto
 			current->stato_articolo = TOBEDELIVERED;
-			pkg_print (current);
+			//pkg_print (current);
 			//codifica e invia pacchetto
 			message = encodePkgForTransmission (current);
 			write (sockfd, message, strlen (message));
+			Package *prev = current;
 			current = current->next;
+			pthread_mutex_unlock (&prev->m_lock);
 			i++;
 			free (message);
 			//usleep (500000);
 			//usleep (50000);
 		} else {
+			pthread_mutex_lock (&current->m_lock);
+			Package *prev = current;
 			current = current->next;
+			pthread_mutex_unlock (&prev->m_lock);
 		}
+		//pthread_mutex_unlock (&prev->m_lock);
 	}
-	pthread_mutex_unlock (&packageMutex);
+	//pthread_mutex_unlock (&packageMutex);
 	write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
 	write (STDOUT_FILENO, "Init Terminata\n", 15);
 }
@@ -118,17 +127,20 @@ void elencaserver_server (int sockfd, Package *handler) {
 	}
 	pthread_mutex_lock (&packageMutex);
 	while (current != NULL) {
-		
+			pthread_mutex_lock (&current->m_lock);
 			//leggi pacchetto
-			//pkg_print (current);
+			pkg_print (current);
 			//codifica e invia pacchetto
+
 			message = encodePkgForTransmission (current);
 			write (sockfd, message, strlen (message));
 			i++;
 			free (message);
 			//usleep (500000);
 			//usleep (50000);
+			Package *prev = current;
 			current = current->next;
+			pthread_mutex_unlock (&prev->m_lock);
 	}
 	pthread_mutex_unlock (&packageMutex);
 	write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
@@ -155,7 +167,7 @@ void ritirato_server (int sockfd, char *strbuffer, Package *handler) {
 	
 /**implementazione con push su "pila"*/
 /**/	
-pthread_mutex_lock (&packageMutex);
+	pthread_mutex_lock (&packageMutex);
 	handler = pkg_enqueue (handler, str, status);
 	pthread_mutex_unlock (&packageMutex);
 	memset (strbuffer, 0, strlen (strbuffer));

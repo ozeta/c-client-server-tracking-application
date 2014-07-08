@@ -88,6 +88,7 @@ status: [0,3]	-> modifica lo stato con uno di quelli disponibili
 */
 Package * pkg_initialize (char **buffer, int status) {
 	int i = 0;
+	int err;
 	char *err00 = "err00: memoria esaurita\n";
 	char *err01 = "err01: impossibile inizializzare il mutex\n";	
 	Package * newPkg   = (Package *) malloc (sizeof (Package));
@@ -108,6 +109,8 @@ Package * pkg_initialize (char **buffer, int status) {
 		newPkg->stato_articolo = i;	
 	}
 	newPkg->next = NULL;
+	if ((err = pthread_mutex_init (&newPkg->m_lock, NULL)) != 0) 
+		perror ("Impossibile allocare il mutex per i thread"), exit (-1);
 	return newPkg;
 }
 
@@ -238,6 +241,7 @@ Package * createList (Package *handler, int inputFD, int tokensNumber, int statu
 			getTokens (str, strbuffer, tokensNumber);
 			/**implementazione con push su "pila"*/
 			handler = pkg_push (handler, str, status);
+			pkg_print (handler);
 			for (i = 0; i < tokensNumber; i++)
 				memset (str[i], '\0', strlen (str[i]));
 			memset (strbuffer, 0, strlen (strbuffer));
@@ -262,7 +266,7 @@ la funzione restituisce il numero di lettere lette nella linea per controllare
 che il file non sia terminato.
 */
 int readLine (int inputFD, char *strbuffer) {
-	memset (strbuffer, 0, strlen (strbuffer));
+	//memset (strbuffer, 0, strlen (strbuffer));
 	int	i = 0;
 	char c;
 	while ((read (inputFD, &c, 1)) > 0 && (c != '\n') ) {
@@ -270,6 +274,8 @@ int readLine (int inputFD, char *strbuffer) {
 		//	c = '\0';
 		strbuffer[i++] = c;
 	}
+	if (strbuffer[0] == '\0')
+		strbuffer[0] = 'A';
 	strbuffer[i] = '\0';	
 
 	return i;
@@ -620,3 +626,6 @@ char *encodePkgForTransmission (Package *handler) {
 
 /*===========================================================================*/
 
+char *decodePkgfromTransmission (char *strbuffer) {
+
+}

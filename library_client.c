@@ -76,10 +76,10 @@ void elencaserver_client (int sockfd, char *cmdPointer) {
 	int check = 1;
 	char *ptr;
 	char c[5];
-	write (sockfd, cmdPointer, strlen (cmdPointer));
-	//write (sockfd, "\n", 1);
 	char *strbuffer = (char *) malloc (256 * sizeof (char));	
 	memset (strbuffer, 0, strlen (strbuffer));
+	write (sockfd, cmdPointer, strlen (cmdPointer));
+	//write (sockfd, "\n", 1);
 	
 	while (check != 0 && (readLine (sockfd, strbuffer)) > 0) {
 		//funzione di libreria che cerca una sottostringa
@@ -108,7 +108,7 @@ int checkCommandInput (char *strbuffer, int parameters) {
 		i++;
 	}
 
-	if (parameters == 3)
+	if (parameters == res)
 		return 1;
 	else
 		return 0;
