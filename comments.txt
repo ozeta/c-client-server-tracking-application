@@ -1,3 +1,9 @@
+/*===========================================================================*/
+/*
+1) Operazioni su Lista Puntata
+*/
+/*===========================================================================*/
+
 /**
 void pkglist_print (Package *handler)
 Parametri in ingresso:
@@ -13,6 +19,9 @@ chiamata alla funzione: “  void pkg_print (Package *handler) ”
 
 /**
 void pkg_print (Package *handler)
+
+
+
 Parametri in ingresso:
 •	Puntatore alla lista di oggetti Package
 
@@ -151,7 +160,14 @@ Quando il campo stato_articolo  risulta uguale si inizializza il contenuto del
 nuovo nodo con il nodo trovato
 */
 
-/**
+
+/*===========================================================================*/
+/*
+2) Operazioni per la Creazione e Inizializzazione della struttura dati
+*/
+/*===========================================================================*/
+
+
 
 
 /**
@@ -252,7 +268,7 @@ delimitazione e poter richiamare la stessa funzione sul resto della sottostringa
 
 /*===========================================================================*/
 /*
-2) operazioni su input
+2) Operazioni di verifica Input Server
 */
 /*===========================================================================*/
 
@@ -326,7 +342,6 @@ La funzione ritorna il valore intero calcolato precedentemente.
 
 /*===========================================================================*/
 /*
-3) operazioni su clientinput
-	verifica input
+3) Operazioni di verifica Input Client
 */
 /*===========================================================================*/

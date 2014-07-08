@@ -222,9 +222,13 @@ Package * createList (Package *handler, int inputFD, int tokensNumber, int statu
 	char *ptr;
 	for (i = 0; i < tokensNumber; i++) {
 		str[i] = (char *) malloc (256 * sizeof (char));
+		if (str[i] == NULL)
+			perror ("memoria esaurita"), exit (-1);
 		memset (str[i], '\0', strlen (str[i]));
 	}
-	char *strbuffer = malloc (256 * sizeof (char));	
+	char *strbuffer = malloc (256 * sizeof (char));
+	if (strbuffer == NULL)
+		perror ("memoria esaurita"), exit (-1);	
 	memset (strbuffer, 0, strlen (strbuffer));
 	while (check != 0 && (readLine (inputFD, strbuffer)) > 0) {
 		//funzione di libreria che cerca una sottostringa
@@ -241,9 +245,13 @@ Package * createList (Package *handler, int inputFD, int tokensNumber, int statu
 			check = 0;	
 	}
 
-	for (i = 0; i < tokensNumber; i++)
-		free (str[i]);
-	free (strbuffer);
+	for (i = 0; i < tokensNumber; i++) {
+		if (str[i] != NULL) {
+			free (str[i]);
+		}
+	}
+	if (strbuffer != NULL)
+		free (strbuffer);
 	
 	return handler;
 }
@@ -526,7 +534,8 @@ int getLine (int inputFD, char **cmdPointer) {
 		command = commandToHash (string);
 		sprintf (strbuffer, "%s\n", strbuffer);
 		*cmdPointer = strbuffer;
-	}
+	} else
+		command = -1;
 	return command;
 }
 

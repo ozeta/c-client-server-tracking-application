@@ -21,7 +21,7 @@ void threadClientInit (int sockfd, Package *handler, int kPackages) {
 			i++;
 			free (message);
 			//usleep (500000);
-			usleep (50000);
+			//usleep (50000);
 		} else {
 			current = current->next;
 		}
@@ -58,32 +58,31 @@ void *thread_connection_handler (void *parametri) {
 }
 
 void talkWithClient (int client_sock, Package *handler) {
-	int command;
-	while (1) {
+	int command = 0;
+	while (command != -1) {
 		write (STDOUT_FILENO, "\nmessaggio in arrivo:\n", 22);
 		char *strbuffer;
 		command = getLine (client_sock, &strbuffer);
 		//output per debug
-		
-		write (STDOUT_FILENO, "getline: ", sizeof ("getline: "));		
-		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
-		write (STDOUT_FILENO, "\n", 1);	
-		commandSwitchServer (command, strbuffer, handler, client_sock);
-		free (strbuffer);
-		write (STDOUT_FILENO, "\nmessaggio terminato\n", 20);
-		command = -1;
+		if (strbuffer != NULL) {
+			write (STDOUT_FILENO, "getline: ", sizeof ("getline: "));		
+			write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
+			write (STDOUT_FILENO, "\n", 1);	
+			command  = commandSwitchServer (command, strbuffer, handler, client_sock);
+			write (STDOUT_FILENO, "\nmessaggio terminato\n", 20);
+		}
 	}
 
 }
 
 
-void commandSwitchServer (int command, char *cmdPointer,
+int commandSwitchServer (int command, char *cmdPointer,
                           Package *handler, int sockfd) {
 	char *err01 = "warning! comando non valido!\n";
 
 	switch (command) {
 		case -1:
-			write (STDOUT_FILENO, err01, strlen (err01));
+		command = -1;
 		break;
 		case ELENCASERVER:
 		/*ELENCA STAMPA LA LISTA REMOTA*/
@@ -105,6 +104,7 @@ void commandSwitchServer (int command, char *cmdPointer,
 			write (STDOUT_FILENO, err01, strlen (err01));
 		break;
 	}
+	return command;
 }
 
 
@@ -120,14 +120,14 @@ void elencaserver_server (int sockfd, Package *handler) {
 	while (current != NULL) {
 		
 			//leggi pacchetto
-			pkg_print (current);
+			//pkg_print (current);
 			//codifica e invia pacchetto
 			message = encodePkgForTransmission (current);
 			write (sockfd, message, strlen (message));
 			i++;
 			free (message);
 			//usleep (500000);
-			usleep (50000);
+			//usleep (50000);
 			current = current->next;
 	}
 	pthread_mutex_unlock (&packageMutex);
@@ -139,27 +139,30 @@ void ritirato_server (int sockfd, char *strbuffer, Package *handler) {
 	write (STDOUT_FILENO, "articolo in ritiro: ", sizeof ("articolo in ritiro: "));		
 	write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
 	write (STDOUT_FILENO, "\n", 1);	
-	/*int tokensNumber = 4;
+	int tokensNumber = 3;
 	char *str[tokensNumber];
 	int i;
 	int check = 1;
 	char *ptr;
+	int lenght = strlen (strbuffer);
+	strbuffer[lenght-1] = '\0';
 	for (i = 0; i < tokensNumber; i++) {
 		str[i] = (char *) malloc (256 * sizeof (char));
-		memset (str[i], '\0', strlen (str[i]));
+		memset (str[i], 0, strlen (str[i]));
 	}
 	Status status = COLLECTED;
-	getTokens (str, strbuffer, tokensNumber);
-*/	
+	getTokens (str, &strbuffer[9], tokensNumber);
+	
 /**implementazione con push su "pila"*/
-/*	pthread_mutex_lock (&packageMutex);
+/**/	
+pthread_mutex_lock (&packageMutex);
 	handler = pkg_enqueue (handler, str, status);
 	pthread_mutex_unlock (&packageMutex);
-	
+	memset (strbuffer, 0, strlen (strbuffer));
 	for (i = 0; i < tokensNumber; i++)
 		free (str[i]);
 	free (strbuffer);
-*/
+/**/
 }
 
 //handler = createList (handler, sockfd,  4, -1)

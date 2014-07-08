@@ -97,7 +97,7 @@ void elencaserver_client (int sockfd, char *cmdPointer) {
 }
 
 
-int checkRitiratoCommand (char *strbuffer) {
+int checkCommandInput (char *strbuffer, int parameters) {
 
 	int i = 0;
 	int end = strlen (strbuffer);
@@ -108,7 +108,7 @@ int checkRitiratoCommand (char *strbuffer) {
 		i++;
 	}
 
-	if (res == 3)
+	if (parameters == 3)
 		return 1;
 	else
 		return 0;
@@ -118,7 +118,7 @@ void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
 	//array semidinamico: riceve l'input dalla funzione
 	//chiamante
 	int check;
-	if ((check = checkRitiratoCommand (strbuffer)) != 0) {
+	if ((check = checkCommandInput (strbuffer, 3)) != 0) {
 
 		int tokensNumber = 3;
 		char *str[tokensNumber];
@@ -132,52 +132,12 @@ void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
 		Status status = COLLECTED;
 		getTokens (str, &strbuffer[9], tokensNumber);
 		handler = pkg_enqueue (handler, str, status);
-		pkg_print (handler);
+		strbuffer[lenght-1] = '\n';		
 		write (sockfd, strbuffer, strlen (strbuffer));
 	} else {
 		char warn1[] = "attenzione, comando non corretto\n";
-		char warn2[] = "ritirato#codice#descrizione#indirizzo\n";
+		char warn2[] = "esempio: ritirato#codice#descrizione#indirizzo\n";
 		write (STDOUT_FILENO, warn1, strlen (warn1));
 		write (STDOUT_FILENO, warn2, strlen (warn2));
 	}
-}
-
-void ritirato_clientA (int sockfd, char *strbuffer, Package *handler) {
-
-
-	int u = 0;
-	write (sockfd, strbuffer, strlen (strbuffer));
-	while (strbuffer[u] != '\n') {
-		u++;
-	}
-	strbuffer[u] = '\0';
-//ritirato#pkg#desc#via\0
-	int i;
-	int tokensNumber = 3;
-	char *str[tokensNumber];
-	char *message;
-
-	for (i = 0; i < tokensNumber; i++) {
-		str[i] = (char *) malloc (256 * sizeof (char));
-		memset (str[i], '\0', strlen (str[i]));
-	}
-
-	char *ptr = strstr (strbuffer, "#");
-	ptr++;
-	getTokens (str, ptr, tokensNumber);
-	int status = COLLECTED;
-	handler = pkg_enqueue (handler, str, status);
-	for (i = 0; i < tokensNumber; i++)
-		memset (str[i], '\0', strlen (str[i]));
-	pkg_print (handler);
-
-
-	message = encodePkgForTransmission (handler);
-	write (sockfd, message, strlen (message));
-	//write (sockfd, "EOM#\n", sizeof ("EOM#\n"));
-	free (message);
-
-/*
-*/
-
 }

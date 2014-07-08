@@ -28,12 +28,6 @@ int main(int argc, char **argv) {
 		char *strbuffer;
 		write (STDOUT_FILENO, mess1, strlen (mess1));	
 		int command = getLine (STDIN_FILENO, &strbuffer);
-		//output per debug
-		/*
-		write (STDOUT_FILENO, "getline: ", sizeof ("getline: "));		
-		write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
-		write (STDOUT_FILENO, "\n", 1);	
-		*/
 		commandSwitch (command, strbuffer, handler, sockfd);
 		free (strbuffer);
 	}
