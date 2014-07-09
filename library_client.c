@@ -294,28 +294,25 @@ void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
 	//array semidinamico: riceve l'input dalla funzione
 	//chiamante
 	int check;
-	char result[20];
+	char result[32];
 	memset (result, 0, sizeof(result));
 	if ((check = checkCommandInput (strbuffer, 3)) != 0) {
 
 		int tokensNumber = 3;
 		char *str[tokensNumber];
 		write (sockfd, strbuffer, strlen (strbuffer));
-		readLine (sockfd, strbuffer);
-		write (STDOUT_FILENO, "--", 2);
-		write (STDOUT_FILENO, strbuffer, strlen(strbuffer));
-		write (STDOUT_FILENO, "--", 2);
-		/*
+		readLine (sockfd, result);
 		char ok[] = "INSOK";
-		char no[] = "NOTOK";		
-		read (sockfd, result, strlen(ok));
-		write (STDOUT_FILENO, result, strlen(result));
-	/*	if ((strcmp (result, "OK")) == 0) {
+		char no[] = "NOTOK";
+		//write (STDOUT_FILENO, strbuffer, strlen (strbuffer));				
+
+		if ((strcmp (result, ok)) == 0) {
 			write (STDOUT_FILENO, "--ok--\n\n", 8);
 
 		} else {
 			write (STDOUT_FILENO, "--no--\n\n", 8);
-		}*/
+		}
+			
 	} else {
 		char warn1[] = "attenzione, comando non corretto\n";
 		char warn2[] = "esempio: ritirato#codice#descrizione#indirizzo\n";
