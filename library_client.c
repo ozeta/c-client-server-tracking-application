@@ -296,6 +296,9 @@ void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
 	int check;
 	char result[32];
 	memset (result, 0, sizeof(result));
+	char messOk[] = "inserimento avvenuto con successo\n";
+	char messNo[] = "impossibile aggiungere pacchetto: codice pacchetto gia' esistente su lista remota\n";
+
 	if ((check = checkCommandInput (strbuffer, 3)) != 0) {
 
 		int tokensNumber = 3;
@@ -307,10 +310,22 @@ void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
 		//write (STDOUT_FILENO, strbuffer, strlen (strbuffer));				
 
 		if ((strcmp (result, ok)) == 0) {
-			write (STDOUT_FILENO, "--ok--\n\n", 8);
-
+			int lenght = strlen (strbuffer);
+			strbuffer[lenght-1] = '\0';
+			int i;
+			for (i = 0; i < tokensNumber; i++) {
+				str[i] = (char *) malloc (256 * sizeof (char));
+				memset (str[i], '\0', strlen (str[i]));
+			}
+			Status status = COLLECTED;
+			getTokens (str, &strbuffer[9], tokensNumber);
+			handler = pkg_enqueue (handler, str, status);
+			for (i = 0; i < tokensNumber; i++) { //libero i puntatori
+				free (str[i]);
+			}
+			write (STDOUT_FILENO, messOk, strlen (messOk));
 		} else {
-			write (STDOUT_FILENO, "--no--\n\n", 8);
+			write (STDOUT_FILENO, messNo, strlen (messNo));
 		}
 			
 	} else {
