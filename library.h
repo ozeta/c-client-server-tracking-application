@@ -27,8 +27,8 @@
 
 int DEBUG; 
 //mutex per la gestione dei thread
-pthread_mutex_t maxThreadsMutex;
-pthread_mutex_t packageMutex;
+pthread_mutex_t 		maxThreadsMutex;
+pthread_mutex_t 		packageMutex;
 
 //variabile globale per la gestione dei thread
 int maxThread;
@@ -36,87 +36,85 @@ int maxThread;
 
 typedef enum statoarticoloT {
 
-	STORAGE			= 0,	// magazzino
-	TOBEDELIVERED	= 1,	// da consegnare
-	DELIVERED		= 2,	// consegnato
-	COLLECTED		= 3 	// ritirato
+	STORAGE			= 	0,	// magazzino
+	TOBEDELIVERED	= 	1,	// da consegnare
+	DELIVERED		= 	2,	// consegnato
+	COLLECTED		= 	3 	// ritirato
 
 } Status;
 
 typedef enum commandHashTable {
 
-	ELENCASERVER 	= 0,	
-	CONSEGNATO 		= 1,
-	RITIRATO		= 2,	
-	SMISTA			= 3,
-	ELENCA 			= 4
+	ELENCASERVER 	=	0,	
+	CONSEGNATO 		=	1,
+	RITIRATO		= 	2,	
+	SMISTA			= 	3,
+	ELENCA 			= 	4
 
 } Hash;
 
 typedef struct PKG {
 
-	char codice_articolo[256];
-	char descrizione_articolo[256];
-	char indirizzo_destinazione[256];
-	Status stato_articolo;
-	pthread_mutex_t m_lock;
-	struct PKG *next;
+	char				codice_articolo[256];
+	char				descrizione_articolo[256];
+	char				indirizzo_destinazione[256];
+	Status 				stato_articolo;
+	pthread_mutex_t 	m_lock;
+	struct PKG 			*next;
 } Package;
 
 typedef struct tmpStruct {
 
-	int sockfd;
-	int kPackages;
-	Package *handler;
-
-
+	int 				sockfd;
+	int 				kPackages;
+	Package 			*handler;
 } Passaggio;
 
 
 
-void pkglist_print (Package *handler);
-void pkg_print (Package *handler);
-Package * pkg_initialize (char **buffer, int status);
-Package * pkg_enqueue (Package * handler, char **buffer, int status);
-Package * pkg_push (Package * handler, char **buffer, int status);
-Package * pkg_delete (Package * handler, char *buffer0);
-Package * pkg_find (Package * handler, char *pkgCode);
-Package * pkg_find_mutex (Package * handler, char *pkgCode);
-Package * pkg_enqueue_mutex (Package * handler, char **buffer, int status);
-Package * getStoredPackage (Package * handler, int status);
-Package * createList (Package *handler, int inputFD, int tokensNumber, int status, int print);
-int readLine (int inputFD, char *strbuffer);
-void getTokens (char *string[], char *strbuffer, int tokensNumber);
-char *getSubstr (char *result, char *input, char terminal, int stepup);
-int checkArguments (char *argument, int argNum);
-int serverInputCheck (int argc, char **argv);
-int randomIntGenerator (int inf, int sup);
-int isValidIpAddress (char *ipAddress);
-int isPortValid (char *argument, int inf, int sup);
-void clientInputCheck (int argc, char **argv);
-void showMenu (void);
-Package *commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd);
-int commandSwitchServer (int command, char *cmdPointer, Package *handler, int sockfd);
+void pkglist_print ( Package *handler );
+void pkg_print ( Package *handler );
+Package * pkg_initialize ( char **buffer, int status );
+Package * pkg_enqueue ( Package * handler, char **buffer, int status );
+Package * pkg_push ( Package * handler, char **buffer, int status );
+Package * pkg_delete ( Package * handler, char *buffer0 );
+Package * pkg_find ( Package * handler, char *pkgCode );
+Package * pkg_find_mutex ( Package * handler, char *pkgCode );
+Package * pkg_enqueue_mutex ( Package * handler, char **buffer, int status );
+Package * getStoredPackage ( Package * handler, int status );
+Package * createList ( Package *handler, int inputFD, int tokensNumber, int status, int print );
+int readLine ( int inputFD, char *strbuffer );
+void getTokens ( char *string[], char *strbuffer, int tokensNumber );
+char *getSubstr ( char *result, char *input, char terminal, int stepup );
+int checkArguments ( char *argument, int argNum );
+int serverInputCheck ( int argc, char **argv );
+int randomIntGenerator ( int inf, int sup );
+int isValidIpAddress ( char *ipAddress );
+int isPortValid ( char *argument, int inf, int sup );
+void clientInputCheck ( int argc, char **argv );
+void showMenu ( void );
+Package *commandSwitch ( int command, char *cmdPointer, Package *handler, int sockfd );
+int commandSwitchServer ( int command, char *cmdPointer, Package *handler, int sockfd );
 
-int commandToHash (char *command);
-void splitCommand (char *string, const char *strbuffer);
-int getCommand (int inputFD, char **cmdPointer);
-int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue);
-int initClientSocket (char **argv);
-void threadClientInit (int sockfd, Package *handler, int kPackages);
-void *thread_connection_handler (void *parametri);
-void talkWithClient (int client_sock, Package *handler);
-void elencaserver_client (int sockfd, char *cmdPointer);
-void elencaserver_server (int sockfd, Package *handler);
-int checkCommandInput (char *strbuffer, int parameters);
-void ritirato_server (int sockfd, char *cmdPointer, Package *handler);
-void ritirato_client (int sockfd, char *strbuffer, Package *handler);
-char *encodePkgForTransmission (Package *handler);
-char *decodePkgfromTransmission (char *strbuffer);
+int commandToHash ( char *command );
+void splitCommand ( char *string, const char *strbuffer );
+int getCommand ( int inputFD, char **cmdPointer );
+int InitServerSocket ( struct sockaddr_in *server, int port, int maxOperatorsQueue );
+int initClientSocket ( char **argv );
+void threadClientInit ( int sockfd, Package *handler, int kPackages );
+void *thread_connection_handler ( void *parametri );
+void talkWithClient ( int client_sock, Package *handler );
+void elencaserver_client ( int sockfd, char *cmdPointer );
+void elencaserver_server ( int sockfd, Package *handler );
+int checkCommandInput ( char *strbuffer, int parameters );
+void ritirato_server ( int sockfd, char *cmdPointer, Package *handler );
+void ritirato_client ( int sockfd, char *strbuffer, Package *handler );
+char *encodePkgForTransmission ( Package *handler );
+char *decodePkgfromTransmission ( char *strbuffer );
 
 
-Package *consegnato_client (int sockfd, char *strbuffer, Package *handler);
-void consegnato_server (int sockfd, char *cmdPointer, Package *handler);
-Package *smista_client (int sockfd, char *strbuffer, Package *handler);
-void smista_server (int sockfd, char *strbuffer, Package *handler);
+Package *consegnato_client ( int sockfd, char *strbuffer, Package *handler );
+void consegnato_server ( int sockfd, char *cmdPointer, Package *handler );
+Package *smista_client ( int sockfd, char *strbuffer, Package *handler );
+void smista_server ( int sockfd, char *strbuffer, Package *handler );
 #endif
