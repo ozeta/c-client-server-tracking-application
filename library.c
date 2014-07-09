@@ -127,7 +127,6 @@ Package * pkg_enqueue (Package * handler, char **buffer, int status) {
 	return handler;
 }
 
-
 Package * pkg_push (Package * handler, char **buffer, int status) {
 	Package * newPkg = pkg_initialize (buffer, status);
 	if (handler != NULL)
@@ -135,9 +134,7 @@ Package * pkg_push (Package * handler, char **buffer, int status) {
 	return newPkg;
 }
 
-
-
-Package * pkg_delete (Package * handler, char *buffer0){
+Package * pkg_delete (Package * handler, char *buffer0) {
 	if (handler == NULL){
 
 	} else if (strcmp (buffer0, handler->codice_articolo) == 0){
@@ -182,6 +179,51 @@ Package * pkg_find (Package * handler, char *pkgCode) {
 	return result;
 }
 
+Package * pkg_find_mutex (Package * handler, char *pkgCode) {
+
+	Package * result = NULL;
+	Package * current = handler;
+	while (current != NULL && result == NULL) {
+		pthread_mutex_lock (&current->m_lock);
+
+		if ((strcmp (current->codice_articolo, pkgCode)) == 0)
+			result = current;
+
+		Package *prev = current;
+		current = current->next;
+		pthread_mutex_unlock (&prev->m_lock);		
+	}
+	return result;
+}
+
+Package * pkg_enqueue_mutexA (Package * handler, char **buffer, int status) {
+	Package *newPkg = pkg_initialize (buffer, status);
+	Package * current = handler;
+	while (current != NULL && current->next != NULL) {
+		pthread_mutex_lock (&current->m_lock);
+
+
+		Package *prev = current;
+		current = current->next;
+		pthread_mutex_unlock (&prev->m_lock);		
+	}
+	return handler;
+}
+Package * pkg_enqueue_mutex (Package * handler, char **buffer, int status) {
+	pthread_mutex_lock (&handler->m_lock);
+	if (handler == NULL){
+		Package * nuovo_nodo = pkg_initialize (buffer, status);
+		if (nuovo_nodo != NULL) {
+
+			nuovo_nodo->next = handler;
+			handler	= nuovo_nodo;
+		}
+	} else
+		handler->next = pkg_enqueue (handler->next, buffer, status);
+	pthread_mutex_unlock (&handler->m_lock);
+	return handler;
+}
+
 /**funzione di ricerca basata sullo stato di magazzino dell'articolo*/
 Package * getStoredPackage (Package * handler, int status) {
 
@@ -199,10 +241,6 @@ Package * getStoredPackage (Package * handler, int status) {
 	return result;
 }
 
-int isEndOfMessage (char *string) {
-
-	return (strcmp (string, "EOM"));
-}
 /**
 funzione che prende in input l'handler della lista, il file di testo, il
  numero di token da analizzare.
@@ -216,12 +254,12 @@ funzione che prende in input l'handler della lista, il file di testo, il
  al termine, vengono liberate le stringhe temporanee.
 */
 
-Package * createList (Package *handler, int inputFD, int tokensNumber, int status) {
+Package * createList (Package *handler, int inputFD, int tokensNumber, int status, int print) {
 	//array semidinamico: riceve l'input dalla funzione
 	//chiamante
-	char *str[tokensNumber];
 	int i;
 	int check = 1;
+	char *str[tokensNumber];
 	char *ptr;
 	for (i = 0; i < tokensNumber; i++) {
 		str[i] = (char *) malloc (256 * sizeof (char));
@@ -233,29 +271,28 @@ Package * createList (Package *handler, int inputFD, int tokensNumber, int statu
 	if (strbuffer == NULL)
 		perror ("memoria esaurita"), exit (-1);	
 	memset (strbuffer, 0, strlen (strbuffer));
-	while (check != 0 && (readLine (inputFD, strbuffer)) > 0) {
+
+	while (check != 0 && (readLine (inputFD, strbuffer)) > 0) { //prendo in ingresso una riga
 		//funzione di libreria che cerca una sottostringa
 		//in una sottostringa e restituisce il puntatore
-		ptr = strstr (strbuffer, "EOM#");
+		ptr = strstr (strbuffer, "EOM#"); //controllo se è presente il codice di fine messaggio
 		if (ptr == NULL) {
-			getTokens (str, strbuffer, tokensNumber);
+			getTokens (str, strbuffer, tokensNumber); //estraggo i token dalla stringa
 			/**implementazione con push su "pila"*/
-			handler = pkg_push (handler, str, status);
-			pkg_print (handler);
-			for (i = 0; i < tokensNumber; i++)
+			handler = pkg_push (handler, str, status); //aggiungo un pacchetto in testa
+			if (print == 1)
+				pkg_print (handler);
+			for (i = 0; i < tokensNumber; i++) //azzero le stringhe
 				memset (str[i], '\0', strlen (str[i]));
 			memset (strbuffer, 0, strlen (strbuffer));
 		} else
 			check = 0;	
 	}
 
-	for (i = 0; i < tokensNumber; i++) {
-		if (str[i] != NULL) {
+	for (i = 0; i < tokensNumber; i++) { //libero i puntatori
 			free (str[i]);
-		}
 	}
-	if (strbuffer != NULL)
-		free (strbuffer);
+	free (strbuffer);
 	
 	return handler;
 }
@@ -265,17 +302,15 @@ puntata.
 la funzione restituisce il numero di lettere lette nella linea per controllare
 che il file non sia terminato.
 */
+
 int readLine (int inputFD, char *strbuffer) {
-	//memset (strbuffer, 0, strlen (strbuffer));
+	memset (strbuffer, 0, strlen (strbuffer));
 	int	i = 0;
 	char c;
 	while ((read (inputFD, &c, 1)) > 0 && (c != '\n') ) {
-		//if (c == '\r')
-		//	c = '\0';
-		strbuffer[i++] = c;
+		if (c != '\0') //controllo che nel buffer non ci siano terminatori
+			strbuffer[i++] = c;
 	}
-	if (strbuffer[0] == '\0')
-		strbuffer[0] = 'A';
 	strbuffer[i] = '\0';	
 
 	return i;
@@ -291,7 +326,6 @@ void getTokens (char *string[], char *strbuffer, int tokensNumber) {
 	int numString = 0;
 	int k = 0;
 
-	
 	for (i = 0; i < tokensNumber -1 ; i++) {
 		strbuffer = getSubstr (string[i], strbuffer, '#', 1);
 	}
@@ -514,7 +548,7 @@ int commandToHash (char *command) {
 	return k;
 }
 
-void getCommand (char *string, const char *strbuffer) {
+void splitCommand (char *string, const char *strbuffer) {
 	int i = 0;
 	while (strbuffer[i] != '\0' && strbuffer[i] != '\n' && strbuffer[i] != '#') {
 		if (strbuffer[i] == '#' || strbuffer[i] == '\n')
@@ -525,7 +559,7 @@ void getCommand (char *string, const char *strbuffer) {
 	
 }
 
-int getLine (int inputFD, char **cmdPointer) {
+int getCommand (int inputFD, char **cmdPointer) {
 
 	int rVar = 1;
 	int command;
@@ -536,7 +570,7 @@ int getLine (int inputFD, char **cmdPointer) {
 	memset (strbuffer, 0, strlen (string));		
 
 	if ( (rVar = readLine (inputFD, strbuffer)) > 0 ) {
-		getCommand (string, strbuffer);
+		splitCommand (string, strbuffer);
 		command = commandToHash (string);
 		sprintf (strbuffer, "%s\n", strbuffer);
 		*cmdPointer = strbuffer;
@@ -627,5 +661,27 @@ char *encodePkgForTransmission (Package *handler) {
 /*===========================================================================*/
 
 char *decodePkgfromTransmission (char *strbuffer) {
-
+	int tokensNumber = 4;
+	char *str[tokensNumber];
+	int i;
+	int check = 1;
+	char *ptr;
+	for (i = 0; i < tokensNumber; i++) {
+		str[i] = (char *) malloc (256 * sizeof (char));
+		if (str[i] == NULL)
+			perror ("memoria esaurita"), exit (-1);
+		memset (str[i], '\0', strlen (str[i]));	
+	}
+	getTokens (str, strbuffer, tokensNumber);
+	char status[24];
+	Status stat = atoi (str[3]);
+		switch (stat) {
+			case STORAGE: strcpy (status, "STORAGE"); break;
+			case TOBEDELIVERED: strcpy (status, "TOBEDELIVERED"); break;
+			case DELIVERED: strcpy (status, "DELIVERED"); break;
+			case COLLECTED: strcpy (status, "COLLECTED"); break;
+			default: strcpy (status, "boh?"); break;
+		}
+	sprintf (strbuffer, "%s , %s , %s . STATO: %s\n", str[0], str[1], str[2], status);
+	return strbuffer;
 }

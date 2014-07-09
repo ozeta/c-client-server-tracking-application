@@ -55,7 +55,7 @@ typedef enum commandHashTable {
 
 typedef struct PKG {
 
-	char codice_articolo[32];
+	char codice_articolo[256];
 	char descrizione_articolo[256];
 	char indirizzo_destinazione[256];
 	Status stato_articolo;
@@ -81,9 +81,10 @@ Package * pkg_enqueue (Package * handler, char **buffer, int status);
 Package * pkg_push (Package * handler, char **buffer, int status);
 Package * pkg_delete (Package * handler, char *buffer0);
 Package * pkg_find (Package * handler, char *pkgCode);
+Package * pkg_find_mutex (Package * handler, char *pkgCode);
+Package * pkg_enqueue_mutex (Package * handler, char **buffer, int status);
 Package * getStoredPackage (Package * handler, int status);
-int isEndOfMessage (char *string);
-Package * createList (Package *handler, int inputFD, int tokensNumber, int status);
+Package * createList (Package *handler, int inputFD, int tokensNumber, int status, int print);
 int readLine (int inputFD, char *strbuffer);
 void getTokens (char *string[], char *strbuffer, int tokensNumber);
 char *getSubstr (char *result, char *input, char terminal, int stepup);
@@ -94,23 +95,28 @@ int isValidIpAddress (char *ipAddress);
 int isPortValid (char *argument, int inf, int sup);
 void clientInputCheck (int argc, char **argv);
 void showMenu (void);
-void commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd);
+Package *commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd);
 int commandSwitchServer (int command, char *cmdPointer, Package *handler, int sockfd);
+
 int commandToHash (char *command);
-void getCommand (char *string, const char *strbuffer);
-int getLineA (int inputFD, char *cmdPointer, char **test);
-int getLine (int inputFD, char **cmdPointer);
+void splitCommand (char *string, const char *strbuffer);
+int getCommand (int inputFD, char **cmdPointer);
 int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue);
 int initClientSocket (char **argv);
-char *encodePkgForTransmission (Package *handler);
 void threadClientInit (int sockfd, Package *handler, int kPackages);
 void *thread_connection_handler (void *parametri);
 void talkWithClient (int client_sock, Package *handler);
 void elencaserver_client (int sockfd, char *cmdPointer);
 void elencaserver_server (int sockfd, Package *handler);
-void commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd);
 int checkCommandInput (char *strbuffer, int parameters);
 void ritirato_server (int sockfd, char *cmdPointer, Package *handler);
 void ritirato_client (int sockfd, char *strbuffer, Package *handler);
+char *encodePkgForTransmission (Package *handler);
+char *decodePkgfromTransmission (char *strbuffer);
 
+
+Package *consegnato_client (int sockfd, char *strbuffer, Package *handler);
+void consegnato_server (int sockfd, char *cmdPointer, Package *handler);
+Package *smista_client (int sockfd, char *strbuffer, Package *handler);
+void smista_server (int sockfd, char *strbuffer, Package *handler);
 #endif

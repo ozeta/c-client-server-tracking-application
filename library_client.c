@@ -38,35 +38,41 @@ int initClientSocket (char **argv) {
 }
 
 
-void commandSwitch (int command, char *strbuffer, Package *handler, int sockfd) {
+Package *commandSwitch (int command, char *strbuffer, Package *handler, int sockfd) {
 	char *err01 = "warning! comando non valido!\n";
 
 	switch (command) {
 
 		case ELENCASERVER:
 		/*STAMPA LA LISTA REMOTA*/
-			write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
+			//write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
 			elencaserver_client (sockfd, strbuffer);
 		break;
 		case CONSEGNATO:
-			write (STDOUT_FILENO, "switch-> consegnato\n", strlen ("switch-> consegnato\n"));
+			//write (STDOUT_FILENO, "switch-> consegnato\n", strlen ("switch-> consegnato\n"));
+			handler = consegnato_client (sockfd, strbuffer, handler);
+			//cercapacchetto
+			//inviapacchetto
+			//cancellapacchetto
 		break;
 		case RITIRATO:
-			write (STDOUT_FILENO, "switch-> ritirato\n", strlen ("switch-> ritirato\n"));
+			//write (STDOUT_FILENO, "switch-> ritirato\n", strlen ("switch-> ritirato\n"));
 			ritirato_client (sockfd, strbuffer, handler);
 		break;
 		case SMISTA:
-			write (STDOUT_FILENO, "switch-> smista\n", strlen ("switch-> smista\n"));
+			//write (STDOUT_FILENO, "switch-> smista\n", strlen ("switch-> smista\n"));
+			handler = smista_client (sockfd, strbuffer, handler);
 		break;
 		case ELENCA:
 		/*ELENCA STAMPA LA LISTA LOCALE*/
-			write (STDOUT_FILENO, "switch-> elenca:\n", strlen ("switch-> elenca:\n"));
+			//write (STDOUT_FILENO, "switch-> elenca:\n", strlen ("switch-> elenca:\n"));
 			pkglist_print (handler);
 		break;						
 		default:
 			write (STDOUT_FILENO, err01, strlen (err01));
 		break;
 	}
+	return handler;
 }
 
 
@@ -86,8 +92,9 @@ void elencaserver_client (int sockfd, char *cmdPointer) {
 		//in una sottostringa e restituisce il puntatore
 		ptr = strstr (strbuffer, "EOM#");
 		if (ptr == NULL) {
+			strbuffer = decodePkgfromTransmission (strbuffer);
 			write (STDOUT_FILENO, strbuffer, strlen (strbuffer));
-			write (STDOUT_FILENO, "\n", 1);
+			//write (STDOUT_FILENO, "\n", 1);
 		} else
 			check = 0;
 		memset (strbuffer, 0, strlen (strbuffer));	
@@ -114,7 +121,7 @@ int checkCommandInput (char *strbuffer, int parameters) {
 		return 0;
 }
 
-void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
+void ritirato_clientA (int sockfd, char *strbuffer, Package *handler) {
 	//array semidinamico: riceve l'input dalla funzione
 	//chiamante
 	int check;
@@ -133,11 +140,187 @@ void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
 		getTokens (str, &strbuffer[9], tokensNumber);
 		handler = pkg_enqueue (handler, str, status);
 		strbuffer[lenght-1] = '\n';		
-		write (sockfd, strbuffer, strlen (strbuffer));
+		if ((write (sockfd, strbuffer, strlen (strbuffer))) == -1) {
+			perror ("impossibile inviare il messaggio: operazione abortita");
+		}
+		for (i = 0; i < tokensNumber; i++) { //libero i puntatori
+			free (str[i]);
+		}
 	} else {
 		char warn1[] = "attenzione, comando non corretto\n";
 		char warn2[] = "esempio: ritirato#codice#descrizione#indirizzo\n";
 		write (STDOUT_FILENO, warn1, strlen (warn1));
 		write (STDOUT_FILENO, warn2, strlen (warn2));
 	}
+
+}
+
+Package *consegnato_client (int sockfd, char *strbuffer, Package *handler) {
+
+		//consegnato#codice
+		//cercapacchetto
+		//inviapacchetto
+		//cancellapacchetto
+	int check;
+	if ((check = checkCommandInput (strbuffer, 1)) != 0) {
+
+		int tokensNumber = 2;
+		char *str[tokensNumber];
+		int lenght = strlen (strbuffer);
+		strbuffer[lenght-1] = '\0';
+		int i;
+		for (i = 0; i < tokensNumber; i++) {
+			str[i] = (char *) malloc (256 * sizeof (char));
+			memset (str[i], '\0', strlen (str[i]));
+		}
+		getTokens (str, strbuffer, tokensNumber);
+
+		Package *result = pkg_find (handler,str[1]);
+		if (result != NULL && result->stato_articolo == TOBEDELIVERED) {
+			strbuffer[lenght-1] = '\n';		
+			if ((write (sockfd, strbuffer, strlen (strbuffer))) != -1) {
+				handler = pkg_delete (handler, str[1]);							
+			} else {
+				perror ("impossibile inviare il messaggio. operazione abortita");
+			}
+		} else {
+			char warn0[] = "attenzione: pacchetto non valido o non esistente\n";
+			write (STDOUT_FILENO, warn0, strlen (warn0));
+		}
+		for (i = 0; i < tokensNumber; i++) { //libero i puntatori
+			free (str[i]);
+		}
+	} else {
+		char warn1[] = "attenzione: comando non corretto\n";
+		char warn2[] = "esempio: consegnato#codice\n";
+		write (STDOUT_FILENO, warn1, strlen (warn1));
+		write (STDOUT_FILENO, warn2, strlen (warn2));
+	}
+
+	return handler;
+}
+
+Package *smista_client (int sockfd, char *strbuffer, Package *handler) {
+	int check;
+	if ((check = checkCommandInput (strbuffer, 1)) != 0) {
+
+		int tokensNumber = 2;
+		char *str[tokensNumber];
+		int lenght = strlen (strbuffer);
+		strbuffer[lenght-1] = '\0';
+		int i;
+		for (i = 0; i < tokensNumber; i++) {
+			str[i] = (char *) malloc (256 * sizeof (char));
+			memset (str[i], '\0', strlen (str[i]));
+		}
+		getTokens (str, strbuffer, tokensNumber);
+
+		Package *result = pkg_find (handler,str[1]);
+
+		if (result != NULL && result->stato_articolo == COLLECTED) {
+			strbuffer[lenght-1] = '\n';		
+			if ((write (sockfd, strbuffer, strlen (strbuffer))) != -1) {
+				handler = pkg_delete (handler, str[1]);							
+			} else {
+				perror ("impossibile inviare il messaggio. operazione abortita");
+			}
+		} else {
+			char warn0[] = "attenzione: pacchetto non valido o non esistente\n";
+			write (STDOUT_FILENO, warn0, strlen (warn0));
+		}
+		for (i = 0; i < tokensNumber; i++) { //libero i puntatori
+			free (str[i]);
+		}
+	} else {
+		char warn1[] = "attenzione: comando non corretto\n";
+		char warn2[] = "esempio: smista#codice\n";
+		write (STDOUT_FILENO, warn1, strlen (warn1));
+		write (STDOUT_FILENO, warn2, strlen (warn2));
+	}
+
+	return handler;
+}
+
+
+void ritirato_clientAA (int sockfd, char *strbuffer, Package *handler) {
+	//array semidinamico: riceve l'input dalla funzione
+	//chiamante
+	int check;
+	char messOk[] = "inserimento avvenuto con successo\n";
+	char messNo[] = "inserimento non concesso: codice pacchetto gia' esistente\n";
+
+	if ((check = checkCommandInput (strbuffer, 3)) != 0) {
+
+		int tokensNumber = 3;
+		char *str[tokensNumber];
+		if ((write (sockfd, strbuffer, strlen (strbuffer))) == -1) {
+			perror ("impossibile inviare il messaggio: operazione abortita");
+		}
+		char result[10];
+		memset (result, 0, sizeof(result));
+		read (sockfd, result, 2);
+		perror (result);
+		if ((strcmp (result, "OK")) == 0) {
+			write (STDOUT_FILENO, "--ok--\n\n", 8);
+			int lenght = strlen (strbuffer);
+			strbuffer[lenght-1] = '\0';
+			int i;
+			for (i = 0; i < tokensNumber; i++) {
+				str[i] = (char *) malloc (256 * sizeof (char));
+				memset (str[i], '\0', strlen (str[i]));
+			}
+			Status status = COLLECTED;
+			getTokens (str, &strbuffer[9], tokensNumber);
+			handler = pkg_enqueue (handler, str, status);
+			for (i = 0; i < tokensNumber; i++) { //libero i puntatori
+				free (str[i]);
+			}
+		} else {
+			write (STDOUT_FILENO, messNo, strlen (messNo));
+
+		}
+
+	} else {
+		char warn1[] = "attenzione, comando non corretto\n";
+		char warn2[] = "esempio: ritirato#codice#descrizione#indirizzo\n";
+		write (STDOUT_FILENO, warn1, strlen (warn1));
+		write (STDOUT_FILENO, warn2, strlen (warn2));
+	}
+
+}
+
+
+void ritirato_client (int sockfd, char *strbuffer, Package *handler) {
+	//array semidinamico: riceve l'input dalla funzione
+	//chiamante
+	int check;
+	char result[20];
+	memset (result, 0, sizeof(result));
+	if ((check = checkCommandInput (strbuffer, 3)) != 0) {
+
+		int tokensNumber = 3;
+		char *str[tokensNumber];
+		write (sockfd, strbuffer, strlen (strbuffer));
+		readLine (sockfd, strbuffer);
+		write (STDOUT_FILENO, "--", 2);
+		write (STDOUT_FILENO, strbuffer, strlen(strbuffer));
+		write (STDOUT_FILENO, "--", 2);
+		/*
+		char ok[] = "INSOK";
+		char no[] = "NOTOK";		
+		read (sockfd, result, strlen(ok));
+		write (STDOUT_FILENO, result, strlen(result));
+	/*	if ((strcmp (result, "OK")) == 0) {
+			write (STDOUT_FILENO, "--ok--\n\n", 8);
+
+		} else {
+			write (STDOUT_FILENO, "--no--\n\n", 8);
+		}*/
+	} else {
+		char warn1[] = "attenzione, comando non corretto\n";
+		char warn2[] = "esempio: ritirato#codice#descrizione#indirizzo\n";
+		write (STDOUT_FILENO, warn1, strlen (warn1));
+		write (STDOUT_FILENO, warn2, strlen (warn2));
+	}
+
 }

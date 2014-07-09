@@ -5,7 +5,7 @@ Package *initClient (int sockfd, Package *handler) {
 	//pkg handler, socket, tokens, status
 	//initClient si mette in attesa di ricevere pacchetti, anche
 	//se il server ne è momentaneamene sprovvisto
-	while ((handler = createList (handler, sockfd,  4, -1)) == NULL) {
+	while ((handler = createList (handler, sockfd,  4, -1, 1)) == NULL) {
 		usleep (50000);
 	}
 
@@ -27,8 +27,8 @@ int main(int argc, char **argv) {
 		//showMenu();
 		char *strbuffer;
 		write (STDOUT_FILENO, mess1, strlen (mess1));	
-		int command = getLine (STDIN_FILENO, &strbuffer);
-		commandSwitch (command, strbuffer, handler, sockfd);
+		int command = getCommand (STDIN_FILENO, &strbuffer);
+		handler = commandSwitch (command, strbuffer, handler, sockfd);
 		free (strbuffer);
 	}
 	write (STDOUT_FILENO, "Ciao!\n", 6);

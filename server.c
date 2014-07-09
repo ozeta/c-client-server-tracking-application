@@ -88,7 +88,7 @@ int main (int argc , char *argv[]) {
 	if ((err = pthread_mutex_init (&packageMutex, NULL)) != 0) 
 		perror ("Impossibile allocare il mutex per la lista"), exit (-1);
 
-	handler = (Package *) createList (handler, inputFD, tokensNumber, status);
+	handler = (Package *) createList (handler, inputFD, tokensNumber, status, 0);
 	close (inputFD);
 	pkglist_print (handler);
 	//return 0;
