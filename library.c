@@ -10,8 +10,6 @@
 
 	libreria di funzioni generiche e condivise
 
-
-
 /*===========================================================================*/
 
 
@@ -29,12 +27,6 @@ pkg_find_r cerca una struttura package nella lista
 /*===========================================================================*/
 
 
-/**questo main serve solo per compilare il file in standalone. va rimosso
-	prima della consegna*//*
-int main () {
-	return 0;
-}
-*/
 /*
 per motivi di efficienza ( velocita'/memoria ) di stack e heap preferisco
  chiamare prima la visita ricorsiva sul nodo successivo e poi
@@ -49,6 +41,11 @@ char *cliCommands[5] = {
 	"ELENCA"
 };
 
+/**
+stampa della lista, ricorsiva.
+la chiamata ricorsiva viene eseguita prima della chiamata alla stampa
+ per limitare le dimensioni dello stack
+*/
 void pkglist_print_r ( Package *handler ) {
 	if ( handler != NULL ) {
 		pkglist_print_r( handler->next );	
@@ -59,15 +56,14 @@ void pkglist_print_r ( Package *handler ) {
 
 void pkg_print ( Package *handler ) {
 	if ( handler != NULL ) {
-		char *message = ( char *) malloc ( 256 * sizeof ( char ) );
-		char status[20];
-		memset ( message, '\0', strlen ( message ) );
+		char *		message 		= stringMalloc();
+		char 		status[20];
 
 		switch ( handler->stato_articolo ) {
-			case STORAGE: strcpy ( status, "STORAGE" ); break;
+			case STORAGE: 		strcpy ( status, "STORAGE" ); 		break;
 			case TOBEDELIVERED: strcpy ( status, "TOBEDELIVERED" ); break;
-			case DELIVERED: strcpy ( status, "DELIVERED" ); break;
-			case COLLECTED: strcpy ( status, "COLLECTED" ); break;
+			case DELIVERED: 	strcpy ( status, "DELIVERED" ); 	break;
+			case COLLECTED: 	strcpy ( status, "COLLECTED" ); 	break;
 			default: strcpy ( status, "boh?" ); break;
 		}
 		sprintf ( message, "%s , %s , %s . STATO: %s\n", handler->codice_articolo,
@@ -110,7 +106,7 @@ Package * pkg_initialize ( char **buffer, int status ) {
 	}
 	newPkg->next = NULL;
 	if (( err = pthread_mutex_init (&newPkg->m_lock, NULL ) ) != 0 ) 
-		perror ( "Impossibile allocare il mutex per i thread" ), exit ( -1 );
+		perror ( err01 ), exit ( -1 );
 	return newPkg;
 }
 
@@ -148,7 +144,7 @@ Package * pkg_delete_r ( Package * handler, char *buffer0 ) {
 	return handler;
 }
 
-void list_delete_r ( Package * handler ){
+void list_delete_r ( Package * handler ) {
 
 	if ( handler != NULL ){
 		list_delete_r ( handler->next );
@@ -244,21 +240,13 @@ funzione che prende in input l'handler della lista, il file di testo, il
 Package * createList ( Package *handler, int inputFD, int tokensNumber, int status, int print ) {
 	//array semidinamico: riceve l'input dalla funzione
 	//chiamante
-	char 		*str[tokensNumber];
-	char 		*ptr;
-	int 		i;
+	char *		ptr;
+	char *		strbuffer;
+	char *		str[tokensNumber];
 	int 		check = 1;
 	
-	for ( i = 0; i < tokensNumber; i++) {
-		str[i] = ( char *) malloc ( 256 * sizeof ( char ) );
-		if ( str[i] == NULL )
-			perror ( "memoria esaurita" ), exit ( -1 );
-		memset ( str[i], '\0', strlen ( str[i] ) );
-	}
-	char *strbuffer = malloc ( 256 * sizeof ( char ) );
-	if ( strbuffer == NULL )
-		perror ( "memoria esaurita" ), exit ( -1 );	
-	memset ( strbuffer, 0, strlen ( strbuffer ) );
+	memsetString ( str, tokensNumber );
+	strbuffer = stringMalloc();
 
 	while ( check != 0 && ( readLine ( inputFD, strbuffer ) ) > 0 ) { //prendo in ingresso una riga
 		//funzione di libreria che cerca una sottostringa
@@ -270,16 +258,13 @@ Package * createList ( Package *handler, int inputFD, int tokensNumber, int stat
 			handler = pkg_push_r ( handler, str, status ); //aggiungo un pacchetto in testa
 			if ( print == 1 )
 				pkg_print ( handler );
-			for ( i = 0; i < tokensNumber; i++) //azzero le stringhe
-				memset ( str[i], '\0', strlen ( str[i] ) );
-			memset ( strbuffer, 0, strlen ( strbuffer ) );
+			memsetString ( str, tokensNumber );
+			memset ( strbuffer, 0, STRING * sizeof ( char ) );
 		} else
 			check = 0;	
 	}
 
-	for ( i = 0; i < tokensNumber; i++) { //libero i puntatori
-			free ( str[i] );
-	}
+	freeArray ( str, tokensNumber );
 	free ( strbuffer );
 	
 	return handler;
@@ -292,9 +277,11 @@ che il file non sia terminato.
 */
 
 int readLine ( int inputFD, char *strbuffer ) {
+	int		i 	= 0;
+	char 	c;
+
+
 	memset ( strbuffer, 0, strlen ( strbuffer ) );
-	int	i = 0;
-	char c;
 	while (( read ( inputFD, &c, 1 ) ) > 0 && ( c != '\n') ) {
 		if ( c != '\0') //controllo che nel buffer non ci siano terminatori
 			strbuffer[i++] = c;
@@ -310,9 +297,7 @@ singola stringa
 per ognuno dei token da leggere, la funzione chiama getTocken.
 */
 void getTokens ( char *string[], char *strbuffer, int tokensNumber ) {
-	int i = 0;
-	int numString = 0;
-	int k = 0;
+	int i 	= 0;
 
 	for ( i = 0; i < tokensNumber -1 ; i++) {
 		strbuffer = getSubstr ( string[i], strbuffer, '#', 1 );
@@ -334,7 +319,6 @@ richiamare la stessa funzione sul resto della sottostringa.
 */
 char *getSubstr ( char *result, char *input, char terminal, int stepup ) {
 	int i = 0;
-	char *punt;
 	
 	while ( input[i] != terminal ) {
 		result[i] = input[i++];
@@ -380,8 +364,7 @@ Il processo server riceve su linea di comando:
 */
 
 int serverInputCheck ( int argc, char **argv ) {
-	int i = 0;
-	int test;
+	int  test;
 	char argv_err0[] = "e' necessario inserire: N operatori; K oggetti; file di lettura\n";
 	if ( argv[1] == NULL || argv[2] == NULL || argv[3] == NULL ) {
 		write ( STDERR_FILENO, argv_err0, strlen( argv_err0 ) );
@@ -449,8 +432,8 @@ int isValidIpAddress ( char *ipAddress ) {
 }
 
 int isPortValid ( char *argument, int inf, int sup ) {
-	int i = 0;
-	int res =  1;
+	int i 			= 0;
+	int res 		= 1;
 
 	if ( argument[i] == '-') {
 		error ( 0, EINVAL, "inserire un valore compreso tra: %d e %d", inf, sup );
@@ -477,16 +460,11 @@ int isPortValid ( char *argument, int inf, int sup ) {
 
 void clientInputCheck ( int argc, char **argv ) {
 	char argv_err0[] 	= "e' necessario inserire: indirizzo IPv4 valido; numero di Porta\n";
+	
 	if ( argv[1] == NULL || argv[2] == NULL ) {
 		write ( STDERR_FILENO, argv_err0, strlen( argv_err0 ) );
 		exit( -1 );
 	}
-	
-	int i = 0;
-
-	//uso la funzione error per:
-	//1 ) scrivere su standard error
-	//2 ) richiamare un messaggio di errore standard
 
 	int test;
 	/* controllo valore operatori attivi*/
@@ -511,8 +489,6 @@ void clientInputCheck ( int argc, char **argv ) {
 
 void showMenu () {
 
-	char buff[256];
-	int check = 0;
     char menu[]			= "ELENCO COMANDI:";
     char elenca[]		= "elenca:\n\n	Elenca le informazioni degli oggetti che l'operatore deve ancora gestire";
     char elserver[]		= "elencaserver:\n\n 	Richiede al SERVER l'elenco completo degli articoli";
@@ -520,7 +496,7 @@ void showMenu () {
     char ritirato[] 	= "ritirato#codice#descrizione#indirizzo:\n\n 	Informa il SERVER del ritiro di un nuovo oggetto ed aggiunge l'articolo nell'elenco locale";
     char smista[] 		= "smista#codice:\n\n 	Informa il SERVER della consegna in magazzino ed elimina l'articolo dall'elenco locale";
 
-	char string[1204];
+	char string[1280];
 	sprintf ( string, "\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n", menu, elenca, elserver, consegnato, ritirato, smista );
 	write ( STDOUT_FILENO, string, strlen ( string ) );
 }
@@ -547,24 +523,21 @@ void splitCommand ( char *string, const char *strbuffer ) {
 	
 }
 
-int getCommand ( int inputFD, char **cmdPointer ) {
+int getCommand ( int inputFD, char **commandString ) {
 
-	int rVar = 1;
-	int command;
-	char *test;
-	char *string = ( char *) malloc ( 256 * sizeof ( char ) );
-	memset ( string, 0, strlen ( string ) );
-	char *strbuffer = ( char *) malloc ( 256 * sizeof ( char ) );
-	memset ( strbuffer, 0, strlen ( string ) );		
+	int 		commandHashValue;
+	int 		rVar 				= 1;
+	char *		string 				= stringMalloc ();
+	char *		strbuffer 			= stringMalloc ();		
 
 	if ( ( rVar = readLine ( inputFD, strbuffer ) ) > 0 ) {
 		splitCommand ( string, strbuffer );
-		command = commandToHash ( string );
+		commandHashValue = commandToHash ( string );
 		sprintf ( strbuffer, "%s\n", strbuffer );
-		*cmdPointer = strbuffer;
+		*commandString = strbuffer;
 	} else
-		command = -1;
-	return command;
+		commandHashValue = -1;
+	return commandHashValue;
 }
 
 /*===========================================================================*/
@@ -574,73 +547,16 @@ int getCommand ( int inputFD, char **cmdPointer ) {
 */
 /*===========================================================================*/
 
-/*inizializza il socket di comunicazione del server*/
-int InitServerSocket ( struct sockaddr_in *server, int port, int maxOperatorsQueue ) {
-
-	//creo il socket
-	int sockfd = socket( AF_INET , SOCK_STREAM , 0 );
-	char mess[] = "Socket creato...\n";
-	if ( sockfd == -1 )
-	{
-		char mess[] = "Non è possibile creare il socket";
-		write( STDOUT_FILENO, mess, strlen ( mess ) );
-	}
-	write( STDOUT_FILENO, mess, strlen ( mess ) );
-	
-	//preaparo la struttura sockaddr_in che contenga le informazioni di connessione
-	server = ( struct sockaddr_in *) malloc ( sizeof ( struct sockaddr_in ) );
-	server->sin_family = AF_INET;
-	server->sin_addr.s_addr = INADDR_ANY;
-	server->sin_port = htons ( port );
-	
-	//effettuo la Bind e gestisco l'eventuale errore
-	//questo ciclo tenta la bind nel caso in cui non la porta non sia libera
-	int bindErr;
-
-	//rende socket non bloccante
-	//fcntl( sockfd, F_SETFL, O_NONBLOCK );
-
-	do {
-		bindErr = bind( sockfd,( struct sockaddr *)server , sizeof( struct sockaddr_in ) );
-		int errsv = errno;
-		if ( bindErr < 0 ) {
-			if ( /* errsv == EINVAL || */ errsv == EADDRINUSE )
-				perror ( "Bind > Error3: Nuovo tentativo di assegnazione tra 5 secondi" ), sleep ( 5 );
-			else
-				perror ( "Bind > Error4: exiting...." ), exit ( -1 );
-		} else if ( bindErr == 0 )
-			write ( STDOUT_FILENO, "Bind eseguita.\n", strlen ( "Bind eseguita.\n" ) );  
-	} while ( bindErr < 0 );
-
-	//avvio la Listen su un numero N di operatori
-	int listErr = listen( sockfd , maxOperatorsQueue );
-	if ( listErr == -1 )
-		perror ( "Errore di listen" ), exit ( -1 );
-
-	char portH[6];
-	sprintf ( portH, "%d\n", port );
-	char *message = "In attesa di connessioni...su porta: ";
-	write ( STDOUT_FILENO, message, strlen ( message ) );
-	write ( STDOUT_FILENO, portH, strlen ( portH ) );
-
-	return sockfd;
-}
-
-/*===========================================================================*/
-
-
-/*===========================================================================*/
-
 char *encodePkgForTransmission ( Package *handler ) {
 
 	if ( handler != NULL ) {
-		char *message = ( char *) malloc ( 256 * sizeof ( char ) );
+		char *message = stringMalloc ();
 		//memset ( message, '\0', strlen ( message ) -1 );
 
 		sprintf ( message, "%s#%s#%s#%d\n", handler->codice_articolo,
-				handler->descrizione_articolo,
-				handler->indirizzo_destinazione,
-				handler->stato_articolo );	
+				  handler->descrizione_articolo,
+				  handler->indirizzo_destinazione,
+				  handler->stato_articolo );	
 
 		return message;
 	}
@@ -649,17 +565,10 @@ char *encodePkgForTransmission ( Package *handler ) {
 /*===========================================================================*/
 
 char *decodePkgfromTransmission ( char *strbuffer ) {
-	int tokensNumber = 4;
-	char *str[tokensNumber];
-	int i;
-	int check = 1;
-	char *ptr;
-	for ( i = 0; i < tokensNumber; i++) {
-		str[i] = ( char *) malloc ( 256 * sizeof ( char ) );
-		if ( str[i] == NULL )
-			perror ( "memoria esaurita" ), exit ( -1 );
-		memset ( str[i], '\0', strlen ( str[i] ) );	
-	}
+	int 			tokensNumber 		= 4;
+	char *			str[tokensNumber];
+
+	memsetString ( str, tokensNumber );
 	getTokens ( str, strbuffer, tokensNumber );
 	char status[24];
 	Status stat = atoi ( str[3] );
@@ -672,4 +581,25 @@ char *decodePkgfromTransmission ( char *strbuffer ) {
 		}
 	sprintf ( strbuffer, "%s , %s , %s . STATO: %s\n", str[0], str[1], str[2], status );
 	return strbuffer;
+}
+
+/*===========================================================================*/
+
+void memsetString (char **str, int tokensNumber )  {
+	int i = 0;
+	for ( i = 0; i < tokensNumber; i++ ) {
+		str[i] = stringMalloc();
+		memset ( str[i], '\0',  STRING * sizeof ( char ) );
+	}
+}
+char * stringMalloc ( void ) {
+		char * strbuffer = ( char *) malloc ( STRING * sizeof ( char ) );
+		memset ( strbuffer, 0, STRING * sizeof ( char ) );
+	return strbuffer;
+}
+
+void freeArray ( char **str, int tokensNumber ) {
+	int i;
+	for ( i = 0; i < tokensNumber; i++)
+		free ( str[i] );
 }

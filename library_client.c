@@ -1,21 +1,34 @@
-#include "library.h"
+#include "library_client.h"
+Package *initClient ( int sockfd, Package *handler ) {
+	//pkg handler, socket, tokens, status
+	//initClient si mette in attesa di ricevere pacchetti, anche
+	//se il server ne è momentaneamene sprovvisto
+	while (( handler = createList ( handler, sockfd,  4, -1, 1 ) ) == NULL ) {
+		usleep ( 50000 );
+	}
+
+	//pkglist_print_r ( handler );
+
+	return handler;
+}
 
 
 int initClientSocket ( char **argv ) {
 
-	char *address;
+	int sockfd;
+	char *			mess00 	= "ip agganciato...\n";
+	char *			mess01 	= "socket creato...\n";
+	char *			mess02 	= "connessione eseguita.\n\n";
+	char *			mess03 	= "impossibile connettersi.\n";
+	
 	struct addrinfo hints, *res;
 	memset (&hints, 0, sizeof ( hints ) );
-	char *mess00 = "ip agganciato...\n";
-	char *mess01 = "socket creato...\n";
-	char *mess02 = "connessione eseguita.\n\n";
-	char *mess03 = "impossibile connettersi.\n";
-	hints.ai_family		= AF_INET; //protocollo ipv4
-	hints.ai_socktype   = SOCK_STREAM; //tcp
-	hints.ai_flags		= AI_PASSIVE; //INADDR_ANY
-	int sockfd;
-		//argv[1] = ip; argv[2] = port
-	if ( getaddrinfo ( argv[1], argv[2], &hints, &res ) == -1 )
+	
+	hints.ai_family			= AF_INET; 															//protocollo ipv4
+	hints.ai_socktype   	= SOCK_STREAM; 														//tcp
+	hints.ai_flags			= AI_PASSIVE; 														//INADDR_ANY
+		
+	if ( getaddrinfo ( argv[1], argv[2], &hints, &res ) == -1 )									//argv[1] = ip; argv[2] = port
 		perror ( "Error1: " ), exit ( -1 );
 	write ( STDOUT_FILENO, mess00, strlen ( mess00 ) );
 	sockfd = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
@@ -23,15 +36,14 @@ int initClientSocket ( char **argv ) {
 		perror ( "Error2: " ), exit ( -1 );
 	write ( STDOUT_FILENO, mess01, strlen ( mess01 ) );
 
-	int bindErr;
 	int timeout = 12;
-	while (( connect ( sockfd, res->ai_addr, res->ai_addrlen ) < 0 ) && timeout > 0 ) {
+	while (( connect ( sockfd, res->ai_addr, res->ai_addrlen ) < 0 ) && timeout > 0 ) {			//se la porta e' occupata, tento di riappropriarmene per timeout volte
 		perror ( "connect >  Nuovo tentativo di connessione tra 5 secondi" ), sleep ( 5 );
 		timeout++;
 	}
-	//se il timeout scade il programma chiude
+	
 	if ( timeout == 0 )
-		write ( STDERR_FILENO, mess03, strlen ( mess03 ) ), exit ( -1 );
+		write ( STDERR_FILENO, mess03, strlen ( mess03 ) ), exit ( -1 );						//se il timeout scade il programma chiude
 	
 	write ( STDOUT_FILENO, mess02, strlen ( mess02 ) );
 	return sockfd;
@@ -74,12 +86,10 @@ Package *commandSwitch ( int command, char *strbuffer, Package *handler, int soc
 
 void elencaserver_client ( int sockfd, char *cmdPointer ) {
 
-	int i;
-	int check = 1;
-	char *ptr;
-	char c[5];
-	char *strbuffer = ( char *) malloc ( 256 * sizeof ( char ) );	
-	memset ( strbuffer, 0, strlen ( strbuffer ) );
+	int 		check = 1;
+	char *		ptr;
+
+	char *strbuffer = stringMalloc ();	
 	write ( sockfd, cmdPointer, strlen ( cmdPointer ) );
 	//write ( sockfd, "\n", 1 );
 	
@@ -93,7 +103,7 @@ void elencaserver_client ( int sockfd, char *cmdPointer ) {
 			//write ( STDOUT_FILENO, "\n", 1 );
 		} else
 			check = 0;
-		memset ( strbuffer, 0, strlen ( strbuffer ) );	
+		memset ( strbuffer, 0,  STRING * sizeof ( char ) );	
 	}
 
 	free ( strbuffer );
@@ -124,23 +134,20 @@ Package *consegnato_client ( int sockfd, char *strbuffer, Package *handler ) {
 		//inviapacchetto
 		//cancellapacchetto
 	int check;
-	if (( check = checkCommandInput ( strbuffer, 1 ) ) != 0 ) {
+	if ( ( check = checkCommandInput ( strbuffer, 1 ) ) != 0 ) {
 
-		int tokensNumber = 2;
-		char *str[tokensNumber];
-		int lenght = strlen ( strbuffer );
-		strbuffer[lenght-1] = '\0';
-		int i;
-		for ( i = 0; i < tokensNumber; i++) {
-			str[i] = ( char *) malloc ( 256 * sizeof ( char ) );
-			memset ( str[i], '\0', strlen ( str[i] ) );
-		}
+		int 		tokensNumber 		= 2;
+		int 		lenght 				= strlen ( strbuffer );
+		char *		str[tokensNumber];
+
+		strbuffer[lenght-1] 			= '\0';
+		memsetString ( str, tokensNumber);
 		getTokens ( str, strbuffer, tokensNumber );
 
 		Package *result = pkg_find_r ( handler,str[1] );
 		if ( result != NULL && result->stato_articolo == TOBEDELIVERED ) {
 			strbuffer[lenght-1] = '\n';		
-			if (( write ( sockfd, strbuffer, strlen ( strbuffer ) )) != -1 ) {
+			if ( ( write ( sockfd, strbuffer, strlen ( strbuffer ) )) != -1 ) {
 				handler = pkg_delete_r ( handler, str[1] );							
 			} else {
 				perror ( "impossibile inviare il messaggio. operazione abortita" );
@@ -149,9 +156,7 @@ Package *consegnato_client ( int sockfd, char *strbuffer, Package *handler ) {
 			char warn0[] = "attenzione: pacchetto non valido o non esistente\n";
 			write ( STDOUT_FILENO, warn0, strlen ( warn0 ) );
 		}
-		for ( i = 0; i < tokensNumber; i++) { //libero i puntatori
-			free ( str[i] );
-		}
+		freeArray ( str, tokensNumber );
 	} else {
 		char warn1[] = "attenzione: comando non corretto\n";
 		char warn2[] = "esempio: consegnato#codice\n";
@@ -162,19 +167,62 @@ Package *consegnato_client ( int sockfd, char *strbuffer, Package *handler ) {
 	return handler;
 }
 
+void ritirato_client ( int sockfd, char *strbuffer, Package *handler ) {
+	//array semidinamico: riceve l'input dalla funzione
+	//chiamante
+	int 	check;
+	char 	result[32];
+	char 	messOk[] 		= "inserimento avvenuto con successo\n";
+	char 	messNo[] 		= "impossibile aggiungere pacchetto: codice pacchetto gia' esistente su lista remota\n";
+
+	memset ( result, 0, 32 * sizeof( char ) );
+
+	if ( ( check = checkCommandInput ( strbuffer, 3 ) ) != 0 ) {
+
+		char 		no[] 				= "NOTOK";
+		char 		ok[] 				= "INSOK";
+		int 		tokensNumber 		= 3;
+		char *		str[tokensNumber];
+		write ( sockfd, strbuffer, strlen ( strbuffer ) );
+		readLine ( sockfd, result );
+		//write ( STDOUT_FILENO, strbuffer, strlen ( strbuffer ) );				
+
+		if (( strcmp ( result, ok ) ) == 0 ) {
+			Status status 		= COLLECTED;
+			int lenght 			= strlen ( strbuffer );
+
+			strbuffer[lenght-1] = '\0';
+
+			memsetString ( str, tokensNumber);
+			getTokens ( str, &strbuffer[9], tokensNumber );
+			handler = pkg_enqueue_r ( handler, str, status );
+
+			write ( STDOUT_FILENO, messOk, strlen ( messOk ) );
+			freeArray ( str, tokensNumber );
+		} else {
+			write ( STDOUT_FILENO, messNo, strlen ( messNo ) );
+		}
+			
+	} else {
+		char warn1[] = "attenzione, comando non corretto\n";
+		char warn2[] = "esempio: ritirato#codice#descrizione#indirizzo\n";
+		write ( STDOUT_FILENO, warn1, strlen ( warn1 ) );
+		write ( STDOUT_FILENO, warn2, strlen ( warn2 ) );
+	}
+
+}
+
+
 Package *smista_client ( int sockfd, char *strbuffer, Package *handler ) {
 	int check;
-	if (( check = checkCommandInput ( strbuffer, 1 ) ) != 0 ) {
+	if ( ( check = checkCommandInput ( strbuffer, 1 ) ) != 0 ) {
 
-		int tokensNumber = 2;
-		char *str[tokensNumber];
-		int lenght = strlen ( strbuffer );
+		int 		tokensNumber 		= 2;
+		int 		lenght 				= strlen ( strbuffer );
+		char *		str[tokensNumber];
+
 		strbuffer[lenght-1] = '\0';
-		int i;
-		for ( i = 0; i < tokensNumber; i++) {
-			str[i] = ( char *) malloc ( 256 * sizeof ( char ) );
-			memset ( str[i], '\0', strlen ( str[i] ) );
-		}
+		memsetString ( str, tokensNumber);
 		getTokens ( str, strbuffer, tokensNumber );
 
 		Package *result = pkg_find_r ( handler,str[1] );
@@ -190,9 +238,7 @@ Package *smista_client ( int sockfd, char *strbuffer, Package *handler ) {
 			char warn0[] = "attenzione: pacchetto non valido o non esistente\n";
 			write ( STDOUT_FILENO, warn0, strlen ( warn0 ) );
 		}
-		for ( i = 0; i < tokensNumber; i++) { //libero i puntatori
-			free ( str[i] );
-		}
+		freeArray ( str, tokensNumber );
 	} else {
 		char warn1[] = "attenzione: comando non corretto\n";
 		char warn2[] = "esempio: smista#codice\n";
@@ -201,52 +247,4 @@ Package *smista_client ( int sockfd, char *strbuffer, Package *handler ) {
 	}
 
 	return handler;
-}
-
-
-void ritirato_client ( int sockfd, char *strbuffer, Package *handler ) {
-	//array semidinamico: riceve l'input dalla funzione
-	//chiamante
-	int check;
-	char result[32];
-	memset ( result, 0, sizeof( result ) );
-	char messOk[] = "inserimento avvenuto con successo\n";
-	char messNo[] = "impossibile aggiungere pacchetto: codice pacchetto gia' esistente su lista remota\n";
-
-	if (( check = checkCommandInput ( strbuffer, 3 ) ) != 0 ) {
-
-		int tokensNumber = 3;
-		char *str[tokensNumber];
-		write ( sockfd, strbuffer, strlen ( strbuffer ) );
-		readLine ( sockfd, result );
-		char ok[] = "INSOK";
-		char no[] = "NOTOK";
-		//write ( STDOUT_FILENO, strbuffer, strlen ( strbuffer ) );				
-
-		if (( strcmp ( result, ok ) ) == 0 ) {
-			int lenght = strlen ( strbuffer );
-			strbuffer[lenght-1] = '\0';
-			int i;
-			for ( i = 0; i < tokensNumber; i++) {
-				str[i] = ( char *) malloc ( 256 * sizeof ( char ) );
-				memset ( str[i], '\0', strlen ( str[i] ) );
-			}
-			Status status = COLLECTED;
-			getTokens ( str, &strbuffer[9], tokensNumber );
-			handler = pkg_enqueue_r ( handler, str, status );
-			for ( i = 0; i < tokensNumber; i++) { //libero i puntatori
-				free ( str[i] );
-			}
-			write ( STDOUT_FILENO, messOk, strlen ( messOk ) );
-		} else {
-			write ( STDOUT_FILENO, messNo, strlen ( messNo ) );
-		}
-			
-	} else {
-		char warn1[] = "attenzione, comando non corretto\n";
-		char warn2[] = "esempio: ritirato#codice#descrizione#indirizzo\n";
-		write ( STDOUT_FILENO, warn1, strlen ( warn1 ) );
-		write ( STDOUT_FILENO, warn2, strlen ( warn2 ) );
-	}
-
 }
