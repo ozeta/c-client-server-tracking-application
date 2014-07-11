@@ -183,11 +183,12 @@ void ritirato_client ( int sockfd, char *strbuffer, Package *handler ) {
 		char 		ok[] 				= "INSOK";
 		int 		tokensNumber 		= 3;
 		char *		str[tokensNumber];
-		sendMessage ( sockfd, strbuffer );
-		readLine ( sockfd, result );
+		
+		if ( (sendMessage ( sockfd, strbuffer ) ) != -1 )
+			check = readLine ( sockfd, result );
 		//write ( STDOUT_FILENO, strbuffer, strlen ( strbuffer ) );				
 
-		if (( strcmp ( result, ok ) ) == 0 ) {
+		if (( strcmp ( result, ok ) ) == 0 && check != -1 ) {
 			Status status 		= COLLECTED;
 			int lenght 			= strlen ( strbuffer );
 

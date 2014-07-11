@@ -298,7 +298,7 @@ void ritirato_server ( int sockfd, char *strbuffer, Package *handler ) {
 	Package * result = pkg_find_mutex ( handler, str[0] );
 	if ( result == NULL ) {
 		check = sendMessage ( sockfd, ok );
-		if (check >= 0 0 ) {
+		if (check >= 0 ) {
 			Status status = COLLECTED;
 			handler = pkg_enqueue_r_mutex ( handler, str, status );
 			write ( STDOUT_FILENO, messOk, strlen ( messOk ) );
