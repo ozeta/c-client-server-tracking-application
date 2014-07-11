@@ -146,7 +146,7 @@ void threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 			//pkg_print ( current );
 			//codifica e invia pacchetto
 			message = encodePkgForTransmission ( current );
-			write ( sockfd, message, strlen ( message ) );
+			sendMessage ( sockfd, message );
 			Package *prev = current;
 			current = current->next;
 			pthread_mutex_unlock (&prev->m_lock );
@@ -163,7 +163,8 @@ void threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 		//pthread_mutex_unlock (&prev->m_lock );
 	}
 	//pthread_mutex_unlock (&packageMutex );
-	write ( sockfd, "EOM#\n", sizeof ( "EOM#\n" ) );
+	//write ( sockfd, "EOM#\n", sizeof ( "EOM#\n" ) );
+	sendMessage ( sockfd, "EOM#\n" );
 	write ( STDOUT_FILENO, "Init Terminata\n", 15 );
 }
 
@@ -225,9 +226,9 @@ int commandSwitchServer ( int command, char *cmdPointer,
 /**elenca i file locali al client*/
 void elencaserver_server ( int sockfd, Package *handler ) {
 
-	int i = 0;
-	char *message;
-	Package *current = handler;
+	int 		i 			= 0;
+	Package *	current 	= handler;
+	
 	if ( current == NULL ) {
 		while ( current == NULL );
 	}
@@ -238,26 +239,27 @@ void elencaserver_server ( int sockfd, Package *handler ) {
 			pkg_print ( current );
 			//codifica e invia pacchetto
 
-			message = encodePkgForTransmission ( current );
-			write ( sockfd, message, strlen ( message ) );
+			char *message = encodePkgForTransmission ( current );
+			sendMessage ( sockfd, message );
 			i++;
 			free ( message );
 			//usleep ( 500000 );
 			//usleep ( 50000 );
-			Package *prev = current;
-			current = current->next;
+			Package *prev 	= current;
+			current 		= current->next;
 			pthread_mutex_unlock (&prev->m_lock );
 	}
 	//pthread_mutex_unlock (&packageMutex );
-	write ( sockfd, "EOM#\n", sizeof ( "EOM#\n" ) );
-
+//	write ( sockfd, "EOM#\n", sizeof ( "EOM#\n" ) );
+	sendMessage ( sockfd, "EOM#\n" );
 }
 /**cambia lo stato di un articolo a CONSEGNATO (DELIVERED) */
 void consegnato_server ( int sockfd, char *strbuffer, Package *handler ) {
-	int 		tokensNumber	 = 2;
+	int 		tokensNumber	= 2;
 	int 		lenght 			= strlen ( strbuffer );
 	char *		str[tokensNumber];
 	strbuffer[lenght-1] = '\0';
+
 	memsetString ( str, tokensNumber);
 	getTokens ( str, strbuffer, tokensNumber );
 	Package * result = pkg_find_mutex ( handler, str[1] );
@@ -278,21 +280,21 @@ void consegnato_server ( int sockfd, char *strbuffer, Package *handler ) {
 /**aggiunge in coda un articolo e gli assegna lo stato RITIRATO (COLLECTED)*/
 void ritirato_server ( int sockfd, char *strbuffer, Package *handler ) {
 
-	char 		messNo[] 		= "inserimento non concesso: codice pacchetto gia' esistente\n";
-	char 		messOk[] 		= "inserimento avvenuto con successo\n";
-	char 		no[] 			= "NOTOK\n";
-	char 		ok[] 			= "INSOK\n";
-	int 		lenght 			= strlen ( strbuffer );
-	int 		tokensNumber	= 3;
+	char 		messNo[] 			= "inserimento non concesso: codice pacchetto gia' esistente\n";
+	char 		messOk[] 			= "inserimento avvenuto con successo\n";
+	char 		no[] 				= "NOTOK\n";
+	char 		ok[] 				= "INSOK\n";
+	int 		lenght 				= strlen ( strbuffer );
+	int 		tokensNumber		= 3;
 	char * 		str[tokensNumber];
 
-	strbuffer[lenght-1] 		= '\0';
+	strbuffer[lenght-1] 			= '\0';
 	memsetString ( str, tokensNumber);
 
 	getTokens ( str, &strbuffer[9], tokensNumber );
 	Package * result = pkg_find_mutex ( handler, str[0] );
 	if ( result == NULL ) {
-		write ( sockfd, ok, strlen ( ok ) );
+		sendMessage ( sockfd, ok );
 		write ( STDOUT_FILENO, messOk, strlen ( messOk ) );
 		
 		Status status = COLLECTED;
@@ -300,7 +302,7 @@ void ritirato_server ( int sockfd, char *strbuffer, Package *handler ) {
 
 	} else {
 
-		write ( sockfd, no, strlen ( no ) );
+		sendMessage ( sockfd, no );
 		write ( STDOUT_FILENO, messNo, strlen ( messNo ) );
 
 	}
@@ -317,7 +319,7 @@ void smista_server ( int sockfd, char *strbuffer, Package *handler ) {
 	int 		lenght 			= strlen ( strbuffer );
 	char * 		str[tokensNumber];
 
-	strbuffer[lenght-1] = '\0';
+	strbuffer[lenght-1] 		= '\0';
 	memsetString ( str, tokensNumber);
 	getTokens ( str, strbuffer, tokensNumber );
 	Package * result = pkg_find_mutex ( handler, str[1] );

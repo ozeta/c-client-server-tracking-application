@@ -29,14 +29,6 @@
 
 #define STRING 256
 int DEBUG;
-//mutex per la gestione dei thread
-pthread_mutex_t 		maxThreadsMutex;
-pthread_mutex_t 		packageMutex;
-
-//variabile globale per la gestione dei thread
-int maxThread;
-
-
 typedef enum statoarticoloT {
 
 	STORAGE			= 	0,	// magazzino
@@ -56,6 +48,13 @@ typedef enum commandHashTable {
 
 } Hash;
 
+//mutex per la gestione dei thread
+pthread_mutex_t 		maxThreadsMutex;
+pthread_mutex_t 		packageMutex;
+
+//variabile globale per la gestione dei thread
+int 					maxThread;
+
 typedef struct PKG {
 
 	char				codice_articolo[256];
@@ -72,6 +71,8 @@ typedef struct tmpStruct {
 	int 				kPackages;
 	Package *			handler;
 } Passaggio;
+
+
 
 /**controllo dei parametri di ingresso*/
 //controlla gli argomenti del server
@@ -94,6 +95,7 @@ void showMenu ( void );
 /**gestione della lista locale*/
 //stampa dell'intera lista, ricorsiva
 void pkglist_print_r ( Package *handler );
+void pkglist_sort_print_r ( Package *handler);
 //stampa singolo pacchetto
 void pkg_print ( Package *handler );
 //alloca e inizializza/riempie pacchetto
@@ -142,6 +144,9 @@ void memsetString ( char **str, int tokensNumber );
 //alloca stringa dinamicamente
 char * stringMalloc ( void );
 //libera lo spazio dell'array
-void freeArray ( char **str, int tokensNumber);
-
+void freeArray ( char **str, int tokensNumber );
+//write su socket + gestione eventuale errore
+int sendMessage ( int sockfd, char *message );
+//decodifica lo stato articolo da enum a stringa
+void decodeStatus (char *status, Status stat);
 #endif

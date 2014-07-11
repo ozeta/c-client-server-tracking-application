@@ -74,7 +74,7 @@ Package *commandSwitch ( int command, char *strbuffer, Package *handler, int soc
 		break;
 		case ELENCA:
 			//write ( STDOUT_FILENO, "switch-> elenca:\n", strlen ( "switch-> elenca:\n" ) );
-			pkglist_print_r ( handler );
+			pkglist_sort_print_r ( handler );
 		break;						
 		default:
 			write ( STDOUT_FILENO, err01, strlen ( err01 ) );
@@ -84,13 +84,13 @@ Package *commandSwitch ( int command, char *strbuffer, Package *handler, int soc
 }
 
 
-void elencaserver_client ( int sockfd, char *cmdPointer ) {
+void elencaserver_client ( int sockfd, char *commandLine ) {
 
 	int 		check = 1;
 	char *		ptr;
 
 	char *strbuffer = stringMalloc ();	
-	write ( sockfd, cmdPointer, strlen ( cmdPointer ) );
+	sendMessage ( sockfd, commandLine );
 	//write ( sockfd, "\n", 1 );
 	
 	while ( check != 0 && ( readLine ( sockfd, strbuffer ) ) > 0 ) {
@@ -147,7 +147,7 @@ Package *consegnato_client ( int sockfd, char *strbuffer, Package *handler ) {
 		Package *result = pkg_find_r ( handler,str[1] );
 		if ( result != NULL && result->stato_articolo == TOBEDELIVERED ) {
 			strbuffer[lenght-1] = '\n';		
-			if ( ( write ( sockfd, strbuffer, strlen ( strbuffer ) )) != -1 ) {
+			if ( ( sendMessage ( sockfd, strbuffer ) ) != -1 ) {
 				handler = pkg_delete_r ( handler, str[1] );							
 			} else {
 				perror ( "impossibile inviare il messaggio. operazione abortita" );
@@ -183,7 +183,7 @@ void ritirato_client ( int sockfd, char *strbuffer, Package *handler ) {
 		char 		ok[] 				= "INSOK";
 		int 		tokensNumber 		= 3;
 		char *		str[tokensNumber];
-		write ( sockfd, strbuffer, strlen ( strbuffer ) );
+		sendMessage ( sockfd, strbuffer );
 		readLine ( sockfd, result );
 		//write ( STDOUT_FILENO, strbuffer, strlen ( strbuffer ) );				
 
@@ -229,7 +229,7 @@ Package *smista_client ( int sockfd, char *strbuffer, Package *handler ) {
 
 		if ( result != NULL && result->stato_articolo == COLLECTED ) {
 			strbuffer[lenght-1] = '\n';		
-			if (( write ( sockfd, strbuffer, strlen ( strbuffer ) )) != -1 ) {
+			if (( sendMessage ( sockfd, strbuffer ) ) != -1 ) {
 				handler = pkg_delete_r ( handler, str[1] );							
 			} else {
 				perror ( "impossibile inviare il messaggio. operazione abortita" );

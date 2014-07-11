@@ -8,7 +8,7 @@ int initClientSocket ( char **argv );
 //gestisce i comandi disponibili
 Package *commandSwitch ( int command, char *cmdPointer, Package *handler, int sockfd );
 //comando elencaserver
-void elencaserver_client ( int sockfd, char *cmdPointer );
+void elencaserver_client ( int sockfd, char *commandLine );
 //controlla che l'input da tastiera sia valido
 int checkCommandInput ( char *strbuffer, int parameters );
 //comando consegnato

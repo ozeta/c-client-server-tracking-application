@@ -53,24 +53,24 @@ void pkglist_print_r ( Package *handler ) {
 
 	}
 }
+void pkglist_sort_print_r ( Package *handler ) {
+	if ( handler != NULL ) {
+		pkg_print ( handler );
+		pkglist_print_r( handler->next );	
+
+	}
+}
 
 void pkg_print ( Package *handler ) {
 	if ( handler != NULL ) {
 		char *		message 		= stringMalloc();
 		char 		status[20];
 
-		switch ( handler->stato_articolo ) {
-			case STORAGE: 		strcpy ( status, "STORAGE" ); 		break;
-			case TOBEDELIVERED: strcpy ( status, "TOBEDELIVERED" ); break;
-			case DELIVERED: 	strcpy ( status, "DELIVERED" ); 	break;
-			case COLLECTED: 	strcpy ( status, "COLLECTED" ); 	break;
-			default: strcpy ( status, "boh?" ); break;
-		}
-		sprintf ( message, "%s , %s , %s . STATO: %s\n", handler->codice_articolo,
-//		sprintf ( message, "Item= %s , %s , %s . STATO: %s\n", handler->codice_articolo,
-				handler->descrizione_articolo,
-				handler->indirizzo_destinazione,
-				status );	
+		decodeStatus (status, handler->stato_articolo);
+		sprintf ( message, "%10s -> %s , %s . %s\n", status ,
+				 handler->codice_articolo,
+				 handler->descrizione_articolo,
+				 handler->indirizzo_destinazione);	
 		write ( STDOUT_FILENO, message, strlen ( message ) );
 		free ( message );
 	}
@@ -497,7 +497,8 @@ void showMenu () {
     char smista[] 		= "smista#codice:\n\n 	Informa il SERVER della consegna in magazzino ed elimina l'articolo dall'elenco locale";
 
 	char string[1280];
-	sprintf ( string, "\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n", menu, elenca, elserver, consegnato, ritirato, smista );
+	sprintf ( string, "\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n", menu, 
+	          elenca, elserver, consegnato, ritirato, smista );
 	write ( STDOUT_FILENO, string, strlen ( string ) );
 }
 
@@ -572,14 +573,11 @@ char *decodePkgfromTransmission ( char *strbuffer ) {
 	getTokens ( str, strbuffer, tokensNumber );
 	char status[24];
 	Status stat = atoi ( str[3] );
-		switch ( stat ) {
-			case STORAGE: strcpy ( status, "STORAGE" ); break;
-			case TOBEDELIVERED: strcpy ( status, "TOBEDELIVERED" ); break;
-			case DELIVERED: strcpy ( status, "DELIVERED" ); break;
-			case COLLECTED: strcpy ( status, "COLLECTED" ); break;
-			default: strcpy ( status, "boh?" ); break;
-		}
-	sprintf ( strbuffer, "%s , %s , %s . STATO: %s\n", str[0], str[1], str[2], status );
+	decodeStatus (status, stat);
+	sprintf ( strbuffer, "%10s -> %s , %s . %s\n", status ,
+			 str[0], str[1], str[2]
+			 );
+
 	return strbuffer;
 }
 
@@ -602,4 +600,22 @@ void freeArray ( char **str, int tokensNumber ) {
 	int i;
 	for ( i = 0; i < tokensNumber; i++)
 		free ( str[i] );
+}
+
+int sendMessage (int sockfd, char *message) {
+	int res = write ( sockfd, message, strlen ( message ) );
+	if (res != strlen ( message ) ) {
+		perror ("Attenzione: errore nell'invio del messaggio");
+	}
+	return res;
+}
+
+void decodeStatus (char *status, Status stat) {
+	switch ( stat ) {
+		case STORAGE: 		strcpy ( status, "[STORAGE]" ); 		break;
+		case TOBEDELIVERED: strcpy ( status, "[TOBEDEL]" ); 		break;
+		case DELIVERED: 	strcpy ( status, "[DELIVER]" ); 		break;
+		case COLLECTED: 	strcpy ( status, "[COLLECT]" ); 		break;
+		default: 			strcpy ( status, "boh?" ); 				break;
+	}
 }
