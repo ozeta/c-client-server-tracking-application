@@ -24,93 +24,136 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
-int DEBUG; 
-//mutex per la gestione dei thread
-pthread_mutex_t maxThreadsMutex;
-pthread_mutex_t packageMutex;
-
-//variabile globale per la gestione dei thread
-int maxThread;
+/*gestione thread*/
 
 
+#define STRING 256
+int DEBUG;
 typedef enum statoarticoloT {
 
-	STORAGE			= 0,	// magazzino
-	TOBEDELIVERED	= 1,	// da consegnare
-	DELIVERED		= 2,	// consegnato
-	COLLECTED		= 3 	// ritirato
+	STORAGE			= 	0,	// magazzino
+	TOBEDELIVERED	= 	1,	// da consegnare
+	DELIVERED		= 	2,	// consegnato
+	COLLECTED		= 	3 	// ritirato
 
 } Status;
 
 typedef enum commandHashTable {
 
-	ELENCASERVER 	= 0,	
-	CONSEGNATO 		= 1,
-	RITIRATO		= 2,	
-	SMISTA			= 3,
-	ELENCA 			= 4
+	ELENCASERVER 	=	0,	
+	CONSEGNATO 		=	1,
+	RITIRATO		= 	2,	
+	SMISTA			= 	3,
+	ELENCA 			= 	4
 
 } Hash;
 
+//mutex per la gestione dei thread
+pthread_mutex_t 		maxThreadsMutex;
+pthread_mutex_t 		packageMutex;
+
+//variabile globale per la gestione dei thread
+int 					maxThread;
+
 typedef struct PKG {
 
-	char codice_articolo[32];
-	char descrizione_articolo[256];
-	char indirizzo_destinazione[256];
-	Status stato_articolo;
-	pthread_mutex_t m_lock;
-	struct PKG *next;
+	char				codice_articolo[256];
+	char				descrizione_articolo[256];
+	char				indirizzo_destinazione[256];
+	Status 				stato_articolo;
+	pthread_mutex_t 	m_lock;
+	struct PKG *		next;
 } Package;
 
 typedef struct tmpStruct {
 
-	int sockfd;
-	int kPackages;
-	Package *handler;
-
-
+	int 				sockfd;
+	int 				kPackages;
+	Package *			handler;
 } Passaggio;
 
 
 
-void pkglist_print (Package *handler);
-void pkg_print (Package *handler);
-Package * pkg_initialize (char **buffer, int status);
-Package * pkg_enqueue (Package * handler, char **buffer, int status);
-Package * pkg_push (Package * handler, char **buffer, int status);
-Package * pkg_delete (Package * handler, char *buffer0);
-Package * pkg_find (Package * handler, char *pkgCode);
-Package * getStoredPackage (Package * handler, int status);
-int isEndOfMessage (char *string);
-Package * createList (Package *handler, int inputFD, int tokensNumber, int status);
-int readLine (int inputFD, char *strbuffer);
-void getTokens (char *string[], char *strbuffer, int tokensNumber);
-char *getSubstr (char *result, char *input, char terminal, int stepup);
-int checkArguments (char *argument, int argNum);
-int serverInputCheck (int argc, char **argv);
-int randomIntGenerator (int inf, int sup);
-int isValidIpAddress (char *ipAddress);
-int isPortValid (char *argument, int inf, int sup);
-void clientInputCheck (int argc, char **argv);
-void showMenu (void);
-void commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd);
-int commandSwitchServer (int command, char *cmdPointer, Package *handler, int sockfd);
-int commandToHash (char *command);
-void getCommand (char *string, const char *strbuffer);
-int getLineA (int inputFD, char *cmdPointer, char **test);
-int getLine (int inputFD, char **cmdPointer);
-int InitServerSocket (struct sockaddr_in *server, int port, int maxOperatorsQueue);
-int initClientSocket (char **argv);
-char *encodePkgForTransmission (Package *handler);
-void threadClientInit (int sockfd, Package *handler, int kPackages);
-void *thread_connection_handler (void *parametri);
-void talkWithClient (int client_sock, Package *handler);
-void elencaserver_client (int sockfd, char *cmdPointer);
-void elencaserver_server (int sockfd, Package *handler);
-void commandSwitch (int command, char *cmdPointer, Package *handler, int sockfd);
-int checkCommandInput (char *strbuffer, int parameters);
-void ritirato_server (int sockfd, char *cmdPointer, Package *handler);
-void ritirato_client (int sockfd, char *strbuffer, Package *handler);
+/**controllo dei parametri di ingresso*/
+//controlla gli argomenti del server
+int serverInputCheck ( int argc, char **argv );
+//controlla che l'argomento sia un numero positivo
+int checkArguments ( char *argument, int argNum );
+//genera numeri interi casuali
+int randomIntGenerator ( int inf, int sup );
+//verifica che una stringa sia un indirizzo ip valido
+int isValidIpAddress ( char *ipAddress );
+//verifica che la porta sia valida
+int isPortValid ( char *argument, int inf, int sup );
+//controlla gli argomenti del client
+void clientInputCheck ( int argc, char **argv );
+/***/
+
+//mostra il menu
+void showMenu ( void );
+
+/**gestione della lista locale*/
+//stampa dell'intera lista, ricorsiva
+void pkglist_print_r ( Package *handler );
+void pkglist_sort_print_r ( Package *handler);
+//stampa singolo pacchetto
+void pkg_print ( Package *handler );
+//alloca e inizializza/riempie pacchetto
+Package * pkg_initialize ( char **buffer, int status );
+//aggiunge in coda un pacchetto
+Package * pkg_enqueue_r ( Package * handler, char **buffer, int status );
+//aggiunge in testa
+Package * pkg_push_r ( Package * handler, char **buffer, int status );
+//cancella un pacchetto dalla lista
+Package * pkg_delete_r ( Package * handler, char *buffer0 );
+//cancella tutta la lista
+void list_delete_r ( Package * handler );
+//scarica su fd il contenuto della memoria
+void package_dump ( Package *handler, int outFD, int print ) ;
+//cancella la memoria
+void list_dump ( Package * handler, int outFD, int print);
+//ricerca pacchetto
+Package * pkg_find_r ( Package * handler, char *pkgCode );
+//ricerca pacchetto, bloccando il mutex
+Package * pkg_find_mutex ( Package * handler, char *pkgCode );
+//aggiunge in coda alla lista, bloccando il mutex
+Package * pkg_enqueue_r_mutex ( Package * handler, char **buffer, int status );
+//recupera un pacchetto in base al suo stato
+Package * getStoredPackage_r ( Package * handler, int status );
+//legge da file descriptor e crea una lista concatenata
+Package * createList ( Package *handler, int inputFD, int tokensNumber, int status, int print );
+
+/**funzioni di lettura e analisi*/
+//legge da fd fino a raggiungere '\n'. salva in strbuffer il contenuto del fd.
+int readLine ( int inputFD, char *strbuffer );
+//legge da strbuffer e separa i token salvandoli in un array di stringhe
+void getTokens ( char *string[], char *strbuffer, int tokensNumber );
+//legge la stringa fino ad un carattere terminale e restituisce la posizione
+char *getSubstr ( char *result, char *input, char terminal );
+
+
+//legge da tastiera ed analizza la stringa
+int getCommand ( int inputFD, char **commandString );
+//legge la stringa strbuffer e ne estrae il comando salvandolo in string
+void splitCommand ( char *string, const char *strbuffer );
+//converte un comando testuale in numero
+int commandToHash ( char *command );
+
+//codifica un elemento della lista per la trasmissione
+char *encodePkgForTransmission ( Package *handler );
+//decodifica un pacchetto ricevuto
+char *decodePkgfromTransmission ( char *strbuffer );
+//inizializza array di stringhe
+void memsetString ( char **str, int tokensNumber );
+//alloca stringa dinamicamente
+char * stringMalloc ( void );
+//libera lo spazio dell'array
+void freeArray ( char **str, int tokensNumber );
+//write su socket + gestione eventuale errore
+int sendMessage ( int sockfd, char *message );
+//decodifica lo stato articolo da enum a stringa
+void decodeStatus (char *status, Status stat);
+
+
 
 #endif
