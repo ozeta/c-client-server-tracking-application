@@ -108,6 +108,10 @@ Package * pkg_push_r ( Package * handler, char **buffer, int status );
 Package * pkg_delete_r ( Package * handler, char *buffer0 );
 //cancella tutta la lista
 void list_delete_r ( Package * handler );
+//scarica su fd il contenuto della memoria
+void package_dump ( Package *handler, int outFD, int print ) ;
+//cancella la memoria
+void list_dump ( Package * handler, int outFD, int print);
 //ricerca pacchetto
 Package * pkg_find_r ( Package * handler, char *pkgCode );
 //ricerca pacchetto, bloccando il mutex
@@ -125,7 +129,7 @@ int readLine ( int inputFD, char *strbuffer );
 //legge da strbuffer e separa i token salvandoli in un array di stringhe
 void getTokens ( char *string[], char *strbuffer, int tokensNumber );
 //legge la stringa fino ad un carattere terminale e restituisce la posizione
-char *getSubstr ( char *result, char *input, char terminal, int stepup );
+char *getSubstr ( char *result, char *input, char terminal );
 
 
 //legge da tastiera ed analizza la stringa
@@ -149,4 +153,7 @@ void freeArray ( char **str, int tokensNumber );
 int sendMessage ( int sockfd, char *message );
 //decodifica lo stato articolo da enum a stringa
 void decodeStatus (char *status, Status stat);
+
+
+
 #endif

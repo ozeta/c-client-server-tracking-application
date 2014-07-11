@@ -72,7 +72,11 @@ void connectionManager ( int sockfd, int opNumber, int kPackages, Package *handl
 
 	while ( 1 ) {
 
-		if ( maxThread < opNumber ) {
+		pthread_mutex_lock (&maxThreadsMutex );
+		int threadCheck = maxThread;
+		pthread_mutex_unlock (&maxThreadsMutex );
+		
+		if ( threadCheck < opNumber ) {
 			client_sock = accept( sockfd, ( struct sockaddr *)&client,
 			                     ( socklen_t*)&clientsize );
 			if ( client_sock != -1 ) {
@@ -92,7 +96,6 @@ void connectionManager ( int sockfd, int opNumber, int kPackages, Package *handl
 						pthread_mutex_unlock (&maxThreadsMutex );
 					} else
 						perror ( "server-mutex: errore" );
-
 				} else 
 					perror ( "impossibile creare il thread" );
 			//
@@ -101,6 +104,7 @@ void connectionManager ( int sockfd, int opNumber, int kPackages, Package *handl
 			}
 		}
 	}
+	free (thread_arr);
 }
 
 /*THREAD CONNESSIONE*/
@@ -129,16 +133,17 @@ void *thread_connection_handler ( void *parametri ) {
 
 void threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 	write ( STDOUT_FILENO, "Init iniziata\n", 14 );
-	int i = 0;
-	char *message;
-	Package *current = handler;
-	//ATTENZIONE CONTROLLA CHE QUESTA CLAUSOLA FUNZIONI
-	//IMPLEMENTARE COMANDO SMISTA
+	
+	char *			message;
+	int 			i 				= 0;
+	int 			check 			= 1;
+	Package *		current 		= handler;
+
 	if ( current == NULL ) {
 		while ( current == NULL );
 	}
-	//pthread_mutex_lock (&packageMutex );
-	while ( current != NULL && i < kPackages ) {
+
+	while ( check >= 0 && current != NULL && i < kPackages ) {
 		if ( current->stato_articolo == STORAGE ) {
 			pthread_mutex_lock (&current->m_lock );
 			//leggi pacchetto
@@ -146,7 +151,7 @@ void threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 			//pkg_print ( current );
 			//codifica e invia pacchetto
 			message = encodePkgForTransmission ( current );
-			sendMessage ( sockfd, message );
+			check 	= sendMessage ( sockfd, message );
 			Package *prev = current;
 			current = current->next;
 			pthread_mutex_unlock (&prev->m_lock );
@@ -160,18 +165,17 @@ void threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 			current = current->next;
 			pthread_mutex_unlock (&prev->m_lock );
 		}
-		//pthread_mutex_unlock (&prev->m_lock );
+
 	}
-	//pthread_mutex_unlock (&packageMutex );
-	//write ( sockfd, "EOM#\n", sizeof ( "EOM#\n" ) );
-	sendMessage ( sockfd, "EOM#\n" );
+
+	if (check >= 0)
+		sendMessage ( sockfd, "EOM#\n" );
 	write ( STDOUT_FILENO, "Init Terminata\n", 15 );
 }
 
 void talkWithClient ( int client_sock, Package *handler ) {
 	int command = 0;
 	while ( command != -1 ) {
-		//write ( STDOUT_FILENO, "in attesa di un messaggio:\n", 27 );
 		char *strbuffer;
 		command = getCommand ( client_sock, &strbuffer );
 		//output per debug
@@ -180,7 +184,6 @@ void talkWithClient ( int client_sock, Package *handler ) {
 			write ( STDOUT_FILENO, strbuffer, strlen ( strbuffer ) );
 			write ( STDOUT_FILENO, "\n", 1 );	
 			command  = commandSwitchServer ( command, strbuffer, handler, client_sock );
-			//write ( STDOUT_FILENO, "\nmessaggio terminato\n", 20 );
 
 		}
 	}
@@ -189,11 +192,11 @@ void talkWithClient ( int client_sock, Package *handler ) {
 
 int commandSwitchServer ( int command, char *cmdPointer,
                           Package *handler, int sockfd ) {
-	char *err01 = "warning! comando non valido!\n";
-	char mess00[] = "elencaserver\n";
-	char mess01[] = "pacchetto consegnato\n";
-	char mess02[] = "pacchetto ritirato\n";
-	char mess03[] = "pacchetto smistato\n";
+	char 	err01[]		= "warning! comando non valido!\n";
+	char 	mess00[] 	= "elencaserver\n";
+	char 	mess01[] 	= "pacchetto consegnato\n";
+	char 	mess02[] 	= "pacchetto ritirato\n";
+	char 	mess03[] 	= "pacchetto smistato\n";
 	
 	switch ( command ) {
 		case -1:
@@ -227,31 +230,30 @@ int commandSwitchServer ( int command, char *cmdPointer,
 void elencaserver_server ( int sockfd, Package *handler ) {
 
 	int 		i 			= 0;
+	int 		check 		= 1;
 	Package *	current 	= handler;
 	
 	if ( current == NULL ) {
 		while ( current == NULL );
 	}
-	//pthread_mutex_lock (&packageMutex );
-	while ( current != NULL ) {
+	while ( current != NULL && check >= 0) {
 			pthread_mutex_lock (&current->m_lock );
 			//leggi pacchetto
 			pkg_print ( current );
 			//codifica e invia pacchetto
 
 			char *message = encodePkgForTransmission ( current );
-			sendMessage ( sockfd, message );
+			check = sendMessage ( sockfd, message );
 			i++;
 			free ( message );
-			//usleep ( 500000 );
+			usleep ( 500000 );
 			//usleep ( 50000 );
 			Package *prev 	= current;
 			current 		= current->next;
 			pthread_mutex_unlock (&prev->m_lock );
 	}
-	//pthread_mutex_unlock (&packageMutex );
-//	write ( sockfd, "EOM#\n", sizeof ( "EOM#\n" ) );
-	sendMessage ( sockfd, "EOM#\n" );
+	if (check >= 0)
+		sendMessage ( sockfd, "EOM#\n" );
 }
 /**cambia lo stato di un articolo a CONSEGNATO (DELIVERED) */
 void consegnato_server ( int sockfd, char *strbuffer, Package *handler ) {
@@ -286,6 +288,7 @@ void ritirato_server ( int sockfd, char *strbuffer, Package *handler ) {
 	char 		ok[] 				= "INSOK\n";
 	int 		lenght 				= strlen ( strbuffer );
 	int 		tokensNumber		= 3;
+	int 		check 				= 1;
 	char * 		str[tokensNumber];
 
 	strbuffer[lenght-1] 			= '\0';
@@ -294,12 +297,13 @@ void ritirato_server ( int sockfd, char *strbuffer, Package *handler ) {
 	getTokens ( str, &strbuffer[9], tokensNumber );
 	Package * result = pkg_find_mutex ( handler, str[0] );
 	if ( result == NULL ) {
-		sendMessage ( sockfd, ok );
-		write ( STDOUT_FILENO, messOk, strlen ( messOk ) );
-		
-		Status status = COLLECTED;
-		handler = pkg_enqueue_r_mutex ( handler, str, status );
-
+		check = sendMessage ( sockfd, ok );
+		if (check >= 0 0 ) {
+			Status status = COLLECTED;
+			handler = pkg_enqueue_r_mutex ( handler, str, status );
+			write ( STDOUT_FILENO, messOk, strlen ( messOk ) );
+		} else
+			write ( STDOUT_FILENO, messNo, strlen ( messNo ) );
 	} else {
 
 		sendMessage ( sockfd, no );
@@ -336,4 +340,12 @@ void smista_server ( int sockfd, char *strbuffer, Package *handler ) {
 	freeArray ( str, tokensNumber );
 	free ( strbuffer );
 
+}
+
+void sig_handler (int signo) {
+	//list_dump ( Package * handler, int outFD, int print)
+}
+
+void signal_thread_handler ( void ( *list_dump )  ) {
+	signal(SIGINT, sig_handler);
 }

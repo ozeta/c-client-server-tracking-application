@@ -14,22 +14,23 @@
 int main ( int argc , char *argv[] ) {
 	//check preliminare su input
 	//signal( SIGINT,SIG_IGN );
-	int inputFD = serverInputCheck ( argc, argv );											//controlla i parametri di input
-	int opNumber = atoi ( argv[1] );														//converte i parametri in numeri
-	int kPackages		= atoi ( argv[2] );
-	int err;
-	int tokensNumber	= 3;	
-	int sockfd , clientsize;
-	int maxOperatorsQueue = 128;
-	Package *handler	= NULL;
-	Status status = STORAGE;
+	Status 			status 				= STORAGE;
+	Package *		handler				= NULL;
+	int 			inputFD 			= serverInputCheck ( argc, argv );											//controlla i parametri di input
+	int 			opNumber 			= atoi ( argv[1] );														//converte i parametri in numeri
+	int 			kPackages			= atoi ( argv[2] );
+	int 			tokensNumber		= 3;	
+	int 			maxOperatorsQueue 	= 128;
+	int 			err;
+	int 			sockfd;
+	int 			clientsize;
 
 	if ( ( err = pthread_mutex_init (&maxThreadsMutex, NULL ) ) != 0 ) 						//inizializza i mutex che gestiscono i thread
 		perror ( "Impossibile allocare il mutex per i thread" ), exit ( -1 );
 
 	handler = ( Package *) createList ( handler, inputFD, tokensNumber, status, 0 );		//legge il file di testo e crea la lista di pacchetti
 	close ( inputFD );
-	pkglist_print_r ( handler );
+	//pkglist_print_r ( handler );
 	//return 0;
 	struct sockaddr_in *server , client;
 	//porta tcp random nel range assegnato da IANA per l'utente

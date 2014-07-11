@@ -83,11 +83,11 @@ status: -1 		-> leggi lo stato da buffer
 status: [0,3]	-> imposta buffer manualmente
 */
 Package * pkg_initialize ( char **buffer, int status ) {
-	int			err;	
-	int			i 			= 0;
-	char 		*err00 		= "err00: memoria esaurita\n";
-	char 		*err01 		= "err01: impossibile inizializzare il mutex\n";	
-	Package 	*newPkg   	= ( Package *) malloc ( sizeof ( Package ) );
+	int				err;	
+	int				i 			= 0;
+	char *			err00 		= "err00: memoria esaurita\n";
+	char *			err01 		= "err01: impossibile inizializzare il mutex\n";	
+	Package *		newPkg   	= ( Package *) malloc ( sizeof ( Package ) );
 	//controllo allocazione memoria
 	if ( newPkg == NULL ) {
 		write ( STDERR_FILENO, err00, strlen ( err00 ) );
@@ -133,7 +133,7 @@ Package * pkg_push_r ( Package * handler, char **buffer, int status ) {
 Package * pkg_delete_r ( Package * handler, char *buffer0 ) {
 	if ( handler == NULL ){
 
-	} else if ( strcmp ( buffer0, handler->codice_articolo ) == 0 ){
+	} else if ( strcmp ( buffer0, handler->codice_articolo ) == 0 ) {
 		Package * nodo = handler->next;
 		free( handler );
 		handler = nodo;
@@ -143,6 +143,7 @@ Package * pkg_delete_r ( Package * handler, char *buffer0 ) {
 
 	return handler;
 }
+
 
 void list_delete_r ( Package * handler ) {
 
@@ -154,12 +155,26 @@ void list_delete_r ( Package * handler ) {
 	}
 }
 
+void package_dump ( Package *handler, int outFD, int print ) {
 
+	char *message = encodePkgForTransmission ( handler );
+	sendMessage ( outFD, message);
+	free ( message );
+
+}
+
+void list_dump ( Package * handler, int outFD, int print) {
+
+	if ( handler != NULL ){
+		list_delete_r ( handler->next );
+		package_dump (handler, outFD, print);
+	}
+}
 
 /**funzione di ricerca base basata su codice articolo*/
 Package * pkg_find_r ( Package * handler, char *pkgCode ) {
 
-	Package * result = NULL;
+	Package * 		result 		= NULL;
 
 	//rettifica <= pkgCode
 	if ( handler != NULL ) {
@@ -177,8 +192,9 @@ Package * pkg_find_r ( Package * handler, char *pkgCode ) {
 
 Package * pkg_find_mutex ( Package * handler, char *pkgCode ) {
 
-	Package * result = NULL;
-	Package * current = handler;
+	Package * 		result 		= NULL;
+	Package * 		current 	= handler;
+
 	while ( current != NULL && result == NULL ) {
 		pthread_mutex_lock (&current->m_lock );
 
@@ -224,6 +240,8 @@ Package * getStoredPackage_r ( Package * handler, int status ) {
 	return result;
 }
 
+
+
 /**
 funzione che prende in input l'handler della lista, il file di testo, il
  numero di token da analizzare.
@@ -243,21 +261,29 @@ Package * createList ( Package *handler, int inputFD, int tokensNumber, int stat
 	char *		ptr;
 	char *		strbuffer;
 	char *		str[tokensNumber];
-	int 		check = 1;
+	int 		check 				= 1;
+	long		count 				= 0;
 	
 	memsetString ( str, tokensNumber );
 	strbuffer = stringMalloc();
 
 	while ( check != 0 && ( readLine ( inputFD, strbuffer ) ) > 0 ) { //prendo in ingresso una riga
-		//funzione di libreria che cerca una sottostringa
-		//in una sottostringa e restituisce il puntatore
+		//strstr: funzione di libreria che cerca una sottostringa e restituisce il puntatore
 		ptr = strstr ( strbuffer, "EOM#" ); //controllo se è presente il codice di fine messaggio
 		if ( ptr == NULL ) {
 			getTokens ( str, strbuffer, tokensNumber ); //estraggo i token dalla stringa
 			/**implementazione con push su "pila"*/
 			handler = pkg_push_r ( handler, str, status ); //aggiungo un pacchetto in testa
-			if ( print == 1 )
+			if ( print == 1 ) {
 				pkg_print ( handler );
+			} else {
+				if ( count % 100 == 0 ) {
+					char message[64];
+					sprintf (message, "%ld pacchetti elaborati \n", count);
+					write (STDOUT_FILENO, message, strlen (message));
+				}
+				count++;
+			}
 			memsetString ( str, tokensNumber );
 			memset ( strbuffer, 0, STRING * sizeof ( char ) );
 		} else
@@ -300,10 +326,10 @@ void getTokens ( char *string[], char *strbuffer, int tokensNumber ) {
 	int i 	= 0;
 
 	for ( i = 0; i < tokensNumber -1 ; i++) {
-		strbuffer = getSubstr ( string[i], strbuffer, '#', 1 );
+		strbuffer = getSubstr ( string[i], strbuffer, '#' );
 	}
 	
-	getSubstr ( string[i], strbuffer, '\0', 0 );		
+	getSubstr ( string[i], strbuffer, '\0' );		
 }
 
 /**
@@ -317,13 +343,13 @@ a questo punto, se stepup == 1, allora verrà restituito il puntatore alla succe
 cella di memoria, in modo da poter superare il carattere di delimitazione e poter
 richiamare la stessa funzione sul resto della sottostringa.
 */
-char *getSubstr ( char *result, char *input, char terminal, int stepup ) {
+char *getSubstr ( char *result, char *input, char terminal ) {
 	int i = 0;
 	
 	while ( input[i] != terminal ) {
 		result[i] = input[i++];
 	}
-	if ( stepup == 1 ) 
+	if ( terminal == '#' ) 
 		input++;
 
 	return input+i;

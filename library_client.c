@@ -74,7 +74,7 @@ Package *commandSwitch ( int command, char *strbuffer, Package *handler, int soc
 		break;
 		case ELENCA:
 			//write ( STDOUT_FILENO, "switch-> elenca:\n", strlen ( "switch-> elenca:\n" ) );
-			pkglist_sort_print_r ( handler );
+			pkglist_print_r ( handler );
 		break;						
 		default:
 			write ( STDOUT_FILENO, err01, strlen ( err01 ) );
