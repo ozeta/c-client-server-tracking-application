@@ -1,0 +1,5 @@
+X) controlla memsetString su createList
+X) sistema memsetString e stringMalloc (rimuovi la doppia allocazione)
+X) quando viene eliminato un pacchetto va distrutto il mutex?
+X) controlla splitcommand (come fa ad entrare nel ciclo?)
+X) quando il server non ha pacchetti da inviare al client

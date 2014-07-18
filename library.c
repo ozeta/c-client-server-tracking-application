@@ -1,5 +1,4 @@
 #include "library.h"
-//todo: devo inizializzare il semaforo.
 /*===========================================================================*/
 /*
 	Nome: server.c
@@ -16,6 +15,7 @@
 /*===========================================================================*/
 /*
 1 ) operazioni su lista puntata
+
 pkg_print stampa la lista intera
 pkg_malloc alloca memoria per la struttura package
 pkg_enqueue_r inserisce una struttura package in coda
@@ -135,6 +135,7 @@ Package * pkg_delete_r ( Package * handler, char *buffer0 ) {
 
 	} else if ( strcmp ( buffer0, handler->codice_articolo ) == 0 ) {
 		Package * nodo = handler->next;
+		pthread_mutex_destroy(handler->m_lock);
 		free( handler );
 		handler = nodo;
 	} else {
@@ -264,7 +265,7 @@ Package * createList ( Package *handler, int inputFD, int tokensNumber, int stat
 	int 		check 				= 1;
 	long		count 				= 0;
 	
-	memsetString ( str, tokensNumber );
+	stringArrayMalloc ( str, tokensNumber );
 	strbuffer = stringMalloc();
 
 	while ( check != 0 && ( readLine ( inputFD, strbuffer ) ) > 0 ) { //prendo in ingresso una riga
@@ -284,7 +285,7 @@ Package * createList ( Package *handler, int inputFD, int tokensNumber, int stat
 				}
 				count++;
 			}
-			memsetString ( str, tokensNumber );
+			memsetStringArray ( str, tokensNumber );
 			memset ( strbuffer, 0, STRING * sizeof ( char ) );
 		} else
 			check = 0;	
@@ -417,10 +418,6 @@ int serverInputCheck ( int argc, char **argv ) {
 	if ( test < 0 )
 		error ( 0, ENOENT , "file di testo non valido" ), exit ( -1 );
 
-
-	if ( argv[4] != NULL && argv[4][1] == '-' && argv[4][1] == 'd')
-		DEBUG = 1;
-
 	return test;
 }
 
@@ -542,9 +539,7 @@ int commandToHash ( char *command ) {
 void splitCommand ( char *string, const char *strbuffer ) {
 	int i = 0;
 	while ( strbuffer[i] != '\0' && strbuffer[i] != '\n' && strbuffer[i] != '#') {
-		if ( strbuffer[i] == '#' || strbuffer[i] == '\n')
-			string[i] = '\0';
-		else
+
 			string[i] = strbuffer[i++];
 	}
 	
@@ -595,7 +590,7 @@ char *decodePkgfromTransmission ( char *strbuffer ) {
 	int 			tokensNumber 		= 4;
 	char *			str[tokensNumber];
 
-	memsetString ( str, tokensNumber );
+	stringArrayMalloc ( str, tokensNumber );
 	getTokens ( str, strbuffer, tokensNumber );
 	char status[24];
 	Status stat = atoi ( str[3] );
@@ -609,13 +604,21 @@ char *decodePkgfromTransmission ( char *strbuffer ) {
 
 /*===========================================================================*/
 
-void memsetString (char **str, int tokensNumber )  {
+void stringArrayMalloc (char **str, int tokensNumber )  {
 	int i = 0;
 	for ( i = 0; i < tokensNumber; i++ ) {
 		str[i] = stringMalloc();
 		memset ( str[i], '\0',  STRING * sizeof ( char ) );
 	}
 }
+
+void memsetStringArray (char **str, int tokensNumber )  {
+	int i = 0;
+	for ( i = 0; i < tokensNumber; i++ ) {
+		memset ( str[i], '\0',  STRING * sizeof ( char ) );
+	}
+}
+
 char * stringMalloc ( void ) {
 		char * strbuffer = ( char *) malloc ( STRING * sizeof ( char ) );
 		memset ( strbuffer, 0, STRING * sizeof ( char ) );

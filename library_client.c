@@ -39,7 +39,7 @@ int initClientSocket ( char **argv ) {
 	int timeout = 12;
 	while (( connect ( sockfd, res->ai_addr, res->ai_addrlen ) < 0 ) && timeout > 0 ) {			//se la porta e' occupata, tento di riappropriarmene per timeout volte
 		perror ( "connect >  Nuovo tentativo di connessione tra 5 secondi" ), sleep ( 5 );
-		timeout++;
+		timeout--;
 	}
 	
 	if ( timeout == 0 )
@@ -54,7 +54,9 @@ Package *commandSwitch ( int command, char *strbuffer, Package *handler, int soc
 	char *err01 = "warning! comando non valido!\n";
 
 	switch ( command ) {
-
+		case -1:
+			handler = NULL;
+		break;
 		case ELENCASERVER:
 		/*STAMPA LA LISTA REMOTA*/
 			//write ( STDOUT_FILENO, strbuffer, strlen ( strbuffer ) );
@@ -141,7 +143,7 @@ Package *consegnato_client ( int sockfd, char *strbuffer, Package *handler ) {
 		char *		str[tokensNumber];
 
 		strbuffer[lenght-1] 			= '\0';
-		memsetString ( str, tokensNumber);
+		stringArrayMalloc ( str, tokensNumber);
 		getTokens ( str, strbuffer, tokensNumber );
 
 		Package *result = pkg_find_r ( handler,str[1] );
@@ -184,7 +186,7 @@ void ritirato_client ( int sockfd, char *strbuffer, Package *handler ) {
 		int 		tokensNumber 		= 3;
 		char *		str[tokensNumber];
 		
-		if ( (sendMessage ( sockfd, strbuffer ) ) != -1 )
+		if ( (sendMessage ( sockfd, strbuffer ) ) > 0 )
 			check = readLine ( sockfd, result );
 		//write ( STDOUT_FILENO, strbuffer, strlen ( strbuffer ) );				
 
@@ -194,7 +196,7 @@ void ritirato_client ( int sockfd, char *strbuffer, Package *handler ) {
 
 			strbuffer[lenght-1] = '\0';
 
-			memsetString ( str, tokensNumber);
+			stringArrayMalloc ( str, tokensNumber);
 			getTokens ( str, &strbuffer[9], tokensNumber );
 			handler = pkg_enqueue_r ( handler, str, status );
 
@@ -223,7 +225,7 @@ Package *smista_client ( int sockfd, char *strbuffer, Package *handler ) {
 		char *		str[tokensNumber];
 
 		strbuffer[lenght-1] = '\0';
-		memsetString ( str, tokensNumber);
+		stringArrayMalloc ( str, tokensNumber);
 		getTokens ( str, strbuffer, tokensNumber );
 
 		Package *result = pkg_find_r ( handler,str[1] );

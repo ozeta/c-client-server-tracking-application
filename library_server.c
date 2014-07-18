@@ -58,13 +58,12 @@ int InitServerSocket ( struct sockaddr_in *server, int port, int maxOperatorsQue
 void connectionManager ( int sockfd, int opNumber, int kPackages, Package *handler,
                          struct sockaddr_in client, int clientsize ) {
 	
-	char 			tids[32];
 	int 			client_sock;	
 	int 			tid;
 
 	pthread_t 		thread_id;
 	pthread_t 		*thread_arr = ( pthread_t *) malloc ( opNumber * sizeof ( pthread_t ) );	
-	tid 			= 0;
+
 	maxThread 		= 0;
 	clientsize 		= sizeof( struct sockaddr_in );
 	char *mess00	= "Connessione accettata\n";
@@ -88,8 +87,6 @@ void connectionManager ( int sockfd, int opNumber, int kPackages, Package *handl
 				param_pass.handler 		= handler;
 				
 				if ( (pthread_create (&thread_arr[maxThread] , NULL , thread_connection_handler , ( void *) &param_pass )) == 0 ) {
-					sprintf  ( tids, "nuovo tid: [%d] ", tid );
-					tid++;
 
 					if ( ( pthread_mutex_lock (&maxThreadsMutex ) ) == 0 ) {
 						maxThread++;
@@ -115,9 +112,10 @@ void *thread_connection_handler ( void *parametri ) {
 	int 				client_sock 	= tmp->sockfd;
 	int 				kPackages 		= tmp->kPackages;
 
-	threadClientInit ( client_sock, handler, kPackages );
+	while ((threadClientInit ( client_sock, handler, kPackages )) == 0)
+		sleep (5);
+	write ( STDOUT_FILENO, "nuova Init Terminata\n", 15 );
 	talkWithClient( client_sock, handler );
-	perror ( "socket client: " );
 	write ( STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ( "\nfine comunicazioni\n" ) );	
 	/*
 	all'uscita del thread, lo elimino dalla "coda" dei thread attivi e libero
@@ -131,17 +129,13 @@ void *thread_connection_handler ( void *parametri ) {
 	return(( void *)0 ); 
 }
 
-void threadClientInit ( int sockfd, Package *handler, int kPackages ) {
-	write ( STDOUT_FILENO, "Init iniziata\n", 14 );
-	
+int threadClientInit ( int sockfd, Package *handler, int kPackages ) {
+
 	char *			message;
-	int 			i 				= 0;
 	int 			check 			= 1;
+	int 			i 				= 0;
 	Package *		current 		= handler;
 
-	if ( current == NULL ) {
-		while ( current == NULL );
-	}
 
 	while ( check >= 0 && current != NULL && i < kPackages ) {
 		if ( current->stato_articolo == STORAGE ) {
@@ -155,8 +149,8 @@ void threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 			Package *prev = current;
 			current = current->next;
 			pthread_mutex_unlock (&prev->m_lock );
-			i++;
 			free ( message );
+			i++;
 			//usleep ( 500000 );
 			//usleep ( 50000 );
 		} else {
@@ -170,7 +164,8 @@ void threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 
 	if (check >= 0)
 		sendMessage ( sockfd, "EOM#\n" );
-	write ( STDOUT_FILENO, "Init Terminata\n", 15 );
+	
+	return i;
 }
 
 void talkWithClient ( int client_sock, Package *handler ) {
@@ -229,13 +224,10 @@ int commandSwitchServer ( int command, char *cmdPointer,
 /**elenca i file locali al client*/
 void elencaserver_server ( int sockfd, Package *handler ) {
 
-	int 		i 			= 0;
+
 	int 		check 		= 1;
 	Package *	current 	= handler;
-	
-	if ( current == NULL ) {
-		while ( current == NULL );
-	}
+
 	while ( current != NULL && check >= 0) {
 			pthread_mutex_lock (&current->m_lock );
 			//leggi pacchetto
@@ -244,9 +236,8 @@ void elencaserver_server ( int sockfd, Package *handler ) {
 
 			char *message = encodePkgForTransmission ( current );
 			check = sendMessage ( sockfd, message );
-			i++;
 			free ( message );
-			usleep ( 500000 );
+			//usleep ( 500000 );
 			//usleep ( 50000 );
 			Package *prev 	= current;
 			current 		= current->next;
@@ -262,7 +253,7 @@ void consegnato_server ( int sockfd, char *strbuffer, Package *handler ) {
 	char *		str[tokensNumber];
 	strbuffer[lenght-1] = '\0';
 
-	memsetString ( str, tokensNumber);
+	stringArrayMalloc ( str, tokensNumber);
 	getTokens ( str, strbuffer, tokensNumber );
 	Package * result = pkg_find_mutex ( handler, str[1] );
 
@@ -292,7 +283,7 @@ void ritirato_server ( int sockfd, char *strbuffer, Package *handler ) {
 	char * 		str[tokensNumber];
 
 	strbuffer[lenght-1] 			= '\0';
-	memsetString ( str, tokensNumber);
+	stringArrayMalloc ( str, tokensNumber);
 
 	getTokens ( str, &strbuffer[9], tokensNumber );
 	Package * result = pkg_find_mutex ( handler, str[0] );
@@ -324,7 +315,7 @@ void smista_server ( int sockfd, char *strbuffer, Package *handler ) {
 	char * 		str[tokensNumber];
 
 	strbuffer[lenght-1] 		= '\0';
-	memsetString ( str, tokensNumber);
+	stringArrayMalloc ( str, tokensNumber);
 	getTokens ( str, strbuffer, tokensNumber );
 	Package * result = pkg_find_mutex ( handler, str[1] );
 
@@ -342,10 +333,3 @@ void smista_server ( int sockfd, char *strbuffer, Package *handler ) {
 
 }
 
-void sig_handler (int signo) {
-	//list_dump ( Package * handler, int outFD, int print)
-}
-
-void signal_thread_handler ( void ( *list_dump )  ) {
-	signal(SIGINT, sig_handler);
-}

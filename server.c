@@ -34,10 +34,10 @@ int main ( int argc , char *argv[] ) {
 	//return 0;
 	struct sockaddr_in *server , client;
 	//porta tcp random nel range assegnato da IANA per l'utente
-	srand ( time ( NULL ) );
-	//int port = 44444;
+	//srand ( time ( NULL ) );
 	//int port = randomIntGenerator ( 1024, 49150 );
-	int port = randomIntGenerator ( 1030, 1039 );
+	//int port = randomIntGenerator ( 1030, 1039 );
+	int port = 44444;
 	sockfd = InitServerSocket ( server, port, maxOperatorsQueue );							//inizializza socket e connessione
 
 	connectionManager ( sockfd, opNumber, kPackages, handler, client, clientsize );		//gestisce le connessioni
