@@ -79,27 +79,29 @@ void connectionManager ( int sockfd, int opNumber, int kPackages, Package *handl
 	char *mess01	= "Thread assegnato\n";
 
 	while ( 1 ) {
-
-		pthread_mutex_lock (&maxThreadsMutex );
+		//leggo dalla variabile globale il numero di connessioni attivate
+		pthread_mutex_lock ( &maxThreadsMutex );
 		int threadCheck = maxThread;
-		pthread_mutex_unlock (&maxThreadsMutex );
-		
+		pthread_mutex_unlock ( &maxThreadsMutex );
+		//se ok, avvio la procedura per creare il nuovo thread
 		if ( threadCheck < opNumber ) {
+		//accetto la connessione in entrata
 			client_sock = accept( sockfd, ( struct sockaddr *)&client,
-			                     ( socklen_t*)&clientsize );
+			                     ( socklen_t* )&clientsize );
 			if ( client_sock != -1 ) {
 				write ( STDOUT_FILENO, mess00, strlen ( mess00 ) );
+				//imposto una struttura temporanea per passare i parametri al thread
 				Passaggio param_pass;
-				memset (&param_pass, 0, sizeof ( Passaggio ) );
+				memset ( &param_pass, 0, sizeof ( Passaggio ) );
 				param_pass.sockfd		= client_sock;
 				param_pass.kPackages 	= kPackages;
 				param_pass.handler 		= handler;
-				
-				if ( (pthread_create (&thread_arr[maxThread] , NULL , thread_connection_handler , ( void *) &param_pass )) == 0 ) {
-
-					if ( ( pthread_mutex_lock (&maxThreadsMutex ) ) == 0 ) {
+				//creo il thread e passo la struttura di parametri
+				if ( (pthread_create ( &thread_arr[maxThread] , NULL , thread_connection_handler , ( void *) &param_pass )) == 0 ) {
+					//blocco il contatore di connessioni e lo aggiorno
+					if ( ( pthread_mutex_lock ( &maxThreadsMutex ) ) == 0 ) {
 						maxThread++;
-						pthread_mutex_unlock (&maxThreadsMutex );
+						pthread_mutex_unlock ( &maxThreadsMutex );
 					} else
 						perror ( "server-mutex: errore" );
 				} else 
@@ -116,26 +118,29 @@ void connectionManager ( int sockfd, int opNumber, int kPackages, Package *handl
 /*THREAD CONNESSIONE*/
 void *thread_connection_handler ( void *parametri ) {
 	signal( SIGPIPE ,SIG_IGN );
-	Passaggio *			tmp 			= ( Passaggio *) parametri;
+	Passaggio *			tmp 			= ( Passaggio * ) parametri;
 	Package *			handler 		= tmp->handler;
 	int 				client_sock 	= tmp->sockfd;
 	int 				kPackages 		= tmp->kPackages;
+	int 				check 			= 0;
 	char *				mess1 			= "nuova Init Terminata\n";
 	char *				mess2 			= "\nfine comunicazioni\n";
-	while ((threadClientInit ( client_sock, handler, kPackages )) == 0)
-		sleep (5);
-	write ( STDOUT_FILENO, mess1, strlen ( mess2 ) );
-	talkWithClient( client_sock, handler );
-	write ( STDOUT_FILENO, mess2, strlen ( mess2 ) );
+	while ( ( check = threadClientInit ( client_sock, handler, kPackages ) ) == 0)
+		sleep ( 5 );
+	if ( check != -1 ) {
+		write ( STDOUT_FILENO, mess1, strlen ( mess1 ) );
+		talkWithClient( client_sock, handler );
+		write ( STDOUT_FILENO, mess2, strlen ( mess2 ) );
+	}
 	/*
 	all'uscita del thread, lo elimino dalla "coda" dei thread attivi e libero
 	uno slot per la connessione. impiego il mutex per poter scrivere sulla
 	variabile globale
 	*/
-	pthread_mutex_lock (&maxThreadsMutex );
+	pthread_mutex_lock ( &maxThreadsMutex );
 	maxThread--;
-	pthread_mutex_unlock (&maxThreadsMutex );
-
+	pthread_mutex_unlock ( &maxThreadsMutex );
+	close ( client_sock );
 	return(( void *)0 ); 
 }
 
@@ -146,10 +151,10 @@ int threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 	int 			i 				= 0;
 	Package *		current 		= handler;
 
-
+	
 	while ( check >= 0 && current != NULL && i < kPackages ) {
 		if ( current->stato_articolo == STORAGE ) {
-			pthread_mutex_lock (&current->m_lock );
+			pthread_mutex_lock ( &current->m_lock );
 			//leggi pacchetto
 			current->stato_articolo = TOBEDELIVERED;
 			//pkg_print ( current );
@@ -158,22 +163,24 @@ int threadClientInit ( int sockfd, Package *handler, int kPackages ) {
 			check 	= sendMessage ( sockfd, message );
 			Package *prev = current;
 			current = current->next;
-			pthread_mutex_unlock (&prev->m_lock );
+			pthread_mutex_unlock ( &prev->m_lock );
 			free ( message );
 			i++;
 			//usleep ( 500000 );
 			//usleep ( 50000 );
 		} else {
-			pthread_mutex_lock (&current->m_lock );
+			pthread_mutex_lock ( &current->m_lock );
 			Package *prev = current;
 			current = current->next;
-			pthread_mutex_unlock (&prev->m_lock );
+			pthread_mutex_unlock ( &prev->m_lock );
 		}
 
 	}
 
 	if (check >= 0)
 		sendMessage ( sockfd, "EOM#\n" );
+	else
+		i = -1;
 	
 	return i;
 }
@@ -202,11 +209,8 @@ int commandSwitchServer ( int command, char *cmdPointer,
 	char 	mess01[] 	= "pacchetto consegnato\n";
 	char 	mess02[] 	= "pacchetto ritirato\n";
 	char 	mess03[] 	= "pacchetto smistato\n";
-	
+	char 	mess04[]	= "client disconnesso\n";
 	switch ( command ) {
-		case -1:
-		command = -1;
-		break;
 		case ELENCASERVER:
 		/*ELENCA STAMPA LA LISTA REMOTA*/
 			write ( STDOUT_FILENO, mess00, strlen ( mess00 ) );
@@ -224,7 +228,11 @@ int commandSwitchServer ( int command, char *cmdPointer,
 		case SMISTA:
 			write ( STDOUT_FILENO, mess03, strlen ( mess03 ) );
 			smista_server ( sockfd, cmdPointer, handler );		
-		break;					
+		break;
+		case ESCI:
+			write ( STDOUT_FILENO, mess04, strlen ( mess04 ) );
+			command = -1;		
+		break;
 		default:
 			write ( STDOUT_FILENO, err01, strlen ( err01 ) );
 		break;
@@ -239,19 +247,19 @@ void elencaserver_server ( int sockfd, Package *handler ) {
 	Package *	current 	= handler;
 
 	while ( current != NULL && check >= 0) {
-			pthread_mutex_lock (&current->m_lock );
-			//leggi pacchetto
-			pkg_print ( current );
-			//codifica e invia pacchetto
+		pthread_mutex_lock ( &current->m_lock );
+		//leggi pacchetto
+		pkg_print ( current );
+		//codifica e invia pacchetto
 
-			char *message = encodePkgForTransmission ( current );
-			check = sendMessage ( sockfd, message );
-			free ( message );
-			//usleep ( 500000 );
-			//usleep ( 50000 );
-			Package *prev 	= current;
-			current 		= current->next;
-			pthread_mutex_unlock (&prev->m_lock );
+		char *message = encodePkgForTransmission ( current );
+		check = sendMessage ( sockfd, message );
+		free ( message );
+		//usleep ( 500000 );
+		//usleep ( 50000 );
+		Package *prev 	= current;
+		current 		= current->next;
+		pthread_mutex_unlock ( &prev->m_lock );
 	}
 	if (check >= 0)
 		sendMessage ( sockfd, "EOM#\n" );
@@ -268,9 +276,9 @@ void consegnato_server ( int sockfd, char *strbuffer, Package *handler ) {
 	Package * result = pkg_find_mutex ( handler, str[1] );
 
 	if ( result != NULL ) {
-		pthread_mutex_lock (&result->m_lock );
+		pthread_mutex_lock ( &result->m_lock );
 		result->stato_articolo = DELIVERED;
-		pthread_mutex_unlock (&result->m_lock );		
+		pthread_mutex_unlock ( &result->m_lock );		
 	} else {
 		perror ( "attenzione: pacchetto non valido o non esistente\n" );
 	}
@@ -330,9 +338,9 @@ void smista_server ( int sockfd, char *strbuffer, Package *handler ) {
 	Package * result = pkg_find_mutex ( handler, str[1] );
 
 	if ( result != NULL ) {
-		pthread_mutex_lock (&result->m_lock );
+		pthread_mutex_lock ( &result->m_lock );
 		result->stato_articolo = STORAGE;
-		pthread_mutex_unlock (&result->m_lock );		
+		pthread_mutex_unlock ( &result->m_lock );		
 	} else {
 		perror ( "attenzione: pacchetto non valido o non esistente\n" );
 	}

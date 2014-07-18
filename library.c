@@ -96,7 +96,7 @@ Package * pkg_initialize ( char **buffer, int status ) {
 		newPkg->stato_articolo = i;	
 	}
 	newPkg->next = NULL;
-	if (( err = pthread_mutex_init (&newPkg->m_lock, NULL ) ) != 0 ) 
+	if (( err = pthread_mutex_init ( &newPkg->m_lock, NULL ) ) != 0 ) 
 		perror ( err01 ), exit ( -1 );
 	return newPkg;
 }
@@ -158,8 +158,8 @@ void package_dump ( Package *handler, int outFD, int print ) {
 void list_dump ( Package * handler, int outFD, int print) {
 
 	if ( handler != NULL ){
-		list_delete_r ( handler->next );
 		package_dump (handler, outFD, print);
+		list_dump ( handler->next, outFD, print );
 	}
 }
 
@@ -188,20 +188,20 @@ Package * pkg_find_mutex ( Package * handler, char *pkgCode ) {
 	Package * 		current 	= handler;
 
 	while ( current != NULL && result == NULL ) {
-		pthread_mutex_lock (&current->m_lock );
+		pthread_mutex_lock ( &current->m_lock );
 
 		if (( strcmp ( current->codice_articolo, pkgCode ) ) == 0 )
 			result = current;
 
 		Package *prev = current;
 		current = current->next;
-		pthread_mutex_unlock (&prev->m_lock );		
+		pthread_mutex_unlock ( &prev->m_lock );		
 	}
 	return result;
 }
 
 Package * pkg_enqueue_r_mutex ( Package * handler, char **buffer, int status ) {
-	pthread_mutex_lock (&handler->m_lock );
+	pthread_mutex_lock ( &handler->m_lock );
 	if ( handler == NULL ){
 		Package * nuovo_nodo = pkg_initialize ( buffer, status );
 		if ( nuovo_nodo != NULL ) {
@@ -211,7 +211,7 @@ Package * pkg_enqueue_r_mutex ( Package * handler, char **buffer, int status ) {
 		}
 	} else
 		handler->next = pkg_enqueue_r ( handler->next, buffer, status );
-	pthread_mutex_unlock (&handler->m_lock );
+	pthread_mutex_unlock ( &handler->m_lock );
 	return handler;
 }
 
@@ -284,10 +284,8 @@ Package * createList ( Package *handler, int inputFD, int tokensNumber, int stat
 }
 
 /**
-prende in ingresso una linea del file di testo e la salva in una stringa
-puntata.
-la funzione restituisce il numero di lettere lette nella linea per controllare
-che il file non sia terminato.
+legge carattere per carattere da FD e salva su stringa. 
+la funzione restituisce il numero di lettere lette
 */
 
 int readLine ( int inputFD, char *strbuffer ) {
@@ -306,8 +304,7 @@ int readLine ( int inputFD, char *strbuffer ) {
 }
 
 /**
-la procedura riempie un array di sottostringhe a partire da una
-singola stringa
+la procedura legge la stringa e separa i token in un array
 per ognuno dei token da leggere, la funzione chiama getSubstr.
 */
 void getTokens ( char *string[], char *strbuffer, int tokensNumber ) {
@@ -328,7 +325,7 @@ uscita, fintanto che non viene raggiunto il carattere separatore.
 la funzione quindi restituisce il puntatore al delimitatore, cioè all'ultimo carattere
 della sottostringa/stringa
 a questo punto, se il carattere terminale eì '#'allora verrà restituito il puntatore alla successiva
-cella di memoria, in modo da poter superare il carattere di delimitazione e poter
+cella di memoria successiva, in modo da poter superare il carattere di delimitazione e poter
 richiamare la stessa funzione sul resto della sottostringa.
 */
 char *getSubstr ( char *result, char *input, char terminal ) {
@@ -513,25 +510,31 @@ void showMenu () {
 }
 
 
-
+/**
+Compara (case unsensitive) la stringa del comando con la tabella hash.
+Restituisce l’intero associato
+*/
 int commandToHash ( char *command ) {
 	int i = 0;
 	int k = 0;
-	while ( i < 5 && ( strcasecmp ( command, cliCommands[i++] ) != 0 ) )
+	while ( i < HASHQ && ( strcasecmp ( command, cliCommands[i++] ) != 0 ) )
 		k++;
 		//printf ( "k: %d", k );
 	return k;
 }
-
+/**
+Estrapola da una stringa in ingresso il primo token
+*/
 void splitCommand ( char *string, const char *strbuffer ) {
 	int i = 0;
 	while ( strbuffer[i] != '\0' && strbuffer[i] != '\n' && strbuffer[i] != '#') {
-
-			string[i] = strbuffer[i++];
+		string[i] = strbuffer[i++];
 	}
 	
 }
-
+/**
+Legge da riga di comando, prende il primo token, lo valuta, restituisce l’intero associato al comando oppure un codice di errore
+*/
 int getCommand ( int inputFD, char **commandString ) {
 
 	int 		commandHashValue;

@@ -36,7 +36,8 @@
 /*gestione thread*/
 
 
-#define STRING 256
+#define STRING 	256
+#define HASHQ	5
 int DEBUG;
 typedef enum statoarticoloT {
 
@@ -53,7 +54,8 @@ typedef enum commandHashTable {
 	CONSEGNATO 		=	1,
 	RITIRATO		= 	2,	
 	SMISTA			= 	3,
-	ELENCA 			= 	4
+	ELENCA 			= 	4,
+	ESCI			=	5
 
 } Hash;
 

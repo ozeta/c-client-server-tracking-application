@@ -32,7 +32,7 @@ int initClientSocket ( char **argv ) {
 	char *			mess03 	= "impossibile connettersi.\n";
 	
 	struct addrinfo hints, *res;
-	memset (&hints, 0, sizeof ( hints ) );
+	memset ( &hints, 0, sizeof ( hints ) );
 	
 	hints.ai_family			= AF_INET; 															//protocollo ipv4
 	hints.ai_socktype   	= SOCK_STREAM; 														//tcp
@@ -64,9 +64,6 @@ Package *commandSwitch ( int command, char *strbuffer, Package *handler, int soc
 	char *err01 = "warning! comando non valido!\n";
 
 	switch ( command ) {
-		case -1:
-			handler = NULL;
-		break;
 		case ELENCASERVER:
 		/*STAMPA LA LISTA REMOTA*/
 			//write ( STDOUT_FILENO, strbuffer, strlen ( strbuffer ) );
@@ -88,9 +85,18 @@ Package *commandSwitch ( int command, char *strbuffer, Package *handler, int soc
 			//write ( STDOUT_FILENO, "switch-> elenca:\n", strlen ( "switch-> elenca:\n" ) );
 			pkglist_print_r ( handler );
 		break;						
+		case ESCI:
+			/*
+			//list_dump (handler, outFD, 0);
+			//list_delete_r ( handler );
+			handler = NULL;
+			sendMessage ( sockfd, "esci\n");
+			*/
+		break;
 		default:
 			write ( STDOUT_FILENO, err01, strlen ( err01 ) );
 		break;
+
 	}
 	return handler;
 }

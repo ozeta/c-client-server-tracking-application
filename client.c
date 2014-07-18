@@ -34,6 +34,7 @@ int main( int argc, char **argv ) {
 		handler 	= commandSwitch ( command, strbuffer, handler, sockfd );		//interpreta il comando ed esegue l'azione corrispondente
 		free ( strbuffer );															//dealloca strbuffer
 	}
+	sendMessage ( sockfd, "esci\n");
 	write ( STDOUT_FILENO, "Ciao!\n", 6 );
 	close ( sockfd );																//chiude il socket
 

@@ -19,8 +19,8 @@ int main ( int argc , char *argv[] ) {
 	//signal( SIGINT,SIG_IGN );
 	Status 			status 				= STORAGE;
 	Package *		handler				= NULL;
-	int 			inputFD 			= serverInputCheck ( argc, argv );											//controlla i parametri di input
-	int 			opNumber 			= atoi ( argv[1] );														//converte i parametri in numeri
+	int 			inputFD 			= serverInputCheck ( argc, argv );					//controlla i parametri di input
+	int 			opNumber 			= atoi ( argv[1] );									//converte i parametri in numeri
 	int 			kPackages			= atoi ( argv[2] );
 	int 			tokensNumber		= 3;	
 	int 			maxOperatorsQueue 	= 128;
@@ -28,7 +28,7 @@ int main ( int argc , char *argv[] ) {
 	int 			sockfd;
 	int 			clientsize;
 
-	if ( ( err = pthread_mutex_init (&maxThreadsMutex, NULL ) ) != 0 ) 						//inizializza i mutex che gestiscono i thread
+	if ( ( err = pthread_mutex_init ( &maxThreadsMutex, NULL ) ) != 0 ) 					//inizializza i mutex che gestiscono i thread
 		perror ( "Impossibile allocare il mutex per i thread" ), exit ( -1 );
 
 	handler = ( Package *) createList ( handler, inputFD, tokensNumber, status, 0 );		//legge il file di testo e crea la lista di pacchetti
@@ -43,7 +43,7 @@ int main ( int argc , char *argv[] ) {
 	int port = 44444;
 	sockfd = InitServerSocket ( server, port, maxOperatorsQueue );							//inizializza socket e connessione
 
-	connectionManager ( sockfd, opNumber, kPackages, handler, client, clientsize );		//gestisce le connessioni
+	connectionManager ( sockfd, opNumber, kPackages, handler, client, clientsize );			//gestisce le connessioni
 
 	close ( sockfd );																		//chiusura di fd e mutex
 	pthread_mutex_destroy ( &maxThreadsMutex );
