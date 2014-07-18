@@ -1,3 +1,12 @@
+/*=============================================================================
+  Nome: server.c
+  Autori:
+	MARCO CARROZZO     	N86/1240
+	MAURIZIO DEL PRETE 	N86/783
+
+	Progetto: Corriere Espresso
+  ===========================================================================*/
+
 #ifndef LIBRARY_H
 #define LIBRARY_H
 
@@ -50,7 +59,6 @@ typedef enum commandHashTable {
 
 //mutex per la gestione dei thread
 pthread_mutex_t 		maxThreadsMutex;
-pthread_mutex_t 		packageMutex;
 
 //variabile globale per la gestione dei thread
 int 					maxThread;
@@ -143,8 +151,10 @@ int commandToHash ( char *command );
 char *encodePkgForTransmission ( Package *handler );
 //decodifica un pacchetto ricevuto
 char *decodePkgfromTransmission ( char *strbuffer );
+//alloca e inizializza array di stringhe
+void stringArrayMalloc (char **str, int tokensNumber );
 //inizializza array di stringhe
-void memsetString ( char **str, int tokensNumber );
+void memsetStringArray (char **str, int tokensNumber );
 //alloca stringa dinamicamente
 char * stringMalloc ( void );
 //libera lo spazio dell'array
