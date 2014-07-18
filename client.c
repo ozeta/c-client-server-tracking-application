@@ -1,9 +1,11 @@
 /*=============================================================================
-  Nome: client.c
-  Autori: Marco Carrozzo, Maurizio Del Prete
-  Progetto: Corriere Espresso
-  ===========================================================================*/
+  Nome: server.c
+  Autori:
+	MARCO CARROZZO     	N86/1240
+	MAURIZIO DEL PRETE 	N86/783
 
+	Progetto: Corriere Espresso
+  ===========================================================================*/
 /*
 	compilazione:
 	gcc client.c library.c library_client.c -o client
@@ -24,13 +26,13 @@ int main( int argc, char **argv ) {
 	handler			 			= NULL;
 	handler 					= initClient ( sockfd, handler );					//inizializza il client. riceve i k pacchetti da consegnare
 	write ( STDOUT_FILENO, mess, strlen ( mess ) );
+	showMenu();																		//mostra il menu dei comandi
 	while ( handler != NULL ) {														//il client vive finche' la lista non e' nulla
-		//showMenu();																//mostra il menu dei comandi
 		char *strbuffer;
 		write ( STDOUT_FILENO, mess1, strlen ( mess1 ) );	
 		int command = getCommand ( STDIN_FILENO, &strbuffer );						//legge un comando da standard input
 		handler 	= commandSwitch ( command, strbuffer, handler, sockfd );		//interpreta il comando ed esegue l'azione corrispondente
-		free ( strbuffer );													//dealloca strbuffer
+		free ( strbuffer );															//dealloca strbuffer
 	}
 	write ( STDOUT_FILENO, "Ciao!\n", 6 );
 	close ( sockfd );																//chiude il socket

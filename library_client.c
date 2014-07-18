@@ -1,4 +1,14 @@
+/*=============================================================================
+  Nome: server.c
+  Autori:
+	MARCO CARROZZO     	N86/1240
+	MAURIZIO DEL PRETE 	N86/783
+
+	Progetto: Corriere Espresso
+  ===========================================================================*/
+
 #include "library_client.h"
+
 Package *initClient ( int sockfd, Package *handler ) {
 	//pkg handler, socket, tokens, status
 	//initClient si mette in attesa di ricevere pacchetti, anche

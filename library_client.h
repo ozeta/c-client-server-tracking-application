@@ -1,3 +1,12 @@
+/*=============================================================================
+  Nome: server.c
+  Autori:
+	MARCO CARROZZO     	N86/1240
+	MAURIZIO DEL PRETE 	N86/783
+
+	Progetto: Corriere Espresso
+  ===========================================================================*/
+
 #ifndef LIBRARYC_H
 #define LIBRARYC_H
 #include "library.h"

@@ -1,8 +1,10 @@
 #include "library.h"
-/*===========================================================================*/
-/*
-	Nome: server.c
-	Autori: Marco Carrozzo, Maurizio Del Prete
+/*=============================================================================
+  Nome: server.c
+  Autori:
+	MARCO CARROZZO     	N86/1240
+	MAURIZIO DEL PRETE 	N86/783
+
 	Progetto: Corriere Espresso
 
 
@@ -16,22 +18,11 @@
 /*
 1 ) operazioni su lista puntata
 
-pkg_print stampa la lista intera
-pkg_malloc alloca memoria per la struttura package
-pkg_enqueue_r inserisce una struttura package in coda
-pkg_push_r inserisce una struttura package in testa
-pkg_delete_r cancella una struttura package dalla lista
-list_delete_r cancella la lista
-pkg_find_r cerca una struttura package nella lista
 */
 /*===========================================================================*/
 
 
-/*
-per motivi di efficienza ( velocita'/memoria ) di stack e heap preferisco
- chiamare prima la visita ricorsiva sul nodo successivo e poi
- effettuare le operazioni sul nodo.
-*/
+
 
 char *cliCommands[5] = {
 	"ELENCASERVER",
@@ -244,16 +235,11 @@ Package * getStoredPackage_r ( Package * handler, int status ) {
 
 
 /**
-funzione che prende in input l'handler della lista, il file di testo, il
- numero di token da analizzare.
- la funzione alloca lo spazio per un numero sufficiente di stringhe temporanee
- dopodiché inizia a leggere linea per linea il file di testo, salvando in strbuffer
- il contenuto della linea. usa la procedura
- getTokens per salvare nell'array di stringhe allocato il contenuto della stringa.
- una volta ottenuti i token, li salva nella lista.
- successivamente viene azzerato il contenuto nelle stringhe di passaggio, e si
- passa alla linea successiva.
- al termine, vengono liberate le stringhe temporanee.
+funzione che crea la lista puntata. prende in input handler della lista,
+file descriptor di ingresso, numero di token da leggere, lo stato da impostare
+al pacchetto e un flag per la stampa a video.
+la funzione controlla anche che nell'input non sia passato un codice di "fine lettura"
+la funzione mostra a video l'avanzamento della scansione dell'input
 */
 
 Package * createList ( Package *handler, int inputFD, int tokensNumber, int status, int print ) {
@@ -275,7 +261,7 @@ Package * createList ( Package *handler, int inputFD, int tokensNumber, int stat
 			getTokens ( str, strbuffer, tokensNumber ); //estraggo i token dalla stringa
 			/**implementazione con push su "pila"*/
 			handler = pkg_push_r ( handler, str, status ); //aggiungo un pacchetto in testa
-			if ( print == 1 ) {
+			if ( print == 1 ) { // se il flag e' attivo, stampo il pacchetto
 				pkg_print ( handler );
 			} else {
 				if ( count % 100 == 0 ) {
@@ -296,6 +282,7 @@ Package * createList ( Package *handler, int inputFD, int tokensNumber, int stat
 	
 	return handler;
 }
+
 /**
 prende in ingresso una linea del file di testo e la salva in una stringa
 puntata.
@@ -321,7 +308,7 @@ int readLine ( int inputFD, char *strbuffer ) {
 /**
 la procedura riempie un array di sottostringhe a partire da una
 singola stringa
-per ognuno dei token da leggere, la funzione chiama getTocken.
+per ognuno dei token da leggere, la funzione chiama getSubstr.
 */
 void getTokens ( char *string[], char *strbuffer, int tokensNumber ) {
 	int i 	= 0;
@@ -334,13 +321,13 @@ void getTokens ( char *string[], char *strbuffer, int tokensNumber ) {
 }
 
 /**
-la funzione prende in ingresso il puntatore all'array in cui scrivera' la stringa,
-la stringa di input, il separatore di linea e stepup.
+la funzione prende in ingresso l'array in cui salver' la stringa,
+la stringa di input, il separatore di linea.
 la funzione copia carattere per carattere la stringa di ingresso nella stringa di
 uscita, fintanto che non viene raggiunto il carattere separatore.
 la funzione quindi restituisce il puntatore al delimitatore, cioè all'ultimo carattere
 della sottostringa/stringa
-a questo punto, se stepup == 1, allora verrà restituito il puntatore alla successiva
+a questo punto, se il carattere terminale eì '#'allora verrà restituito il puntatore alla successiva
 cella di memoria, in modo da poter superare il carattere di delimitazione e poter
 richiamare la stessa funzione sul resto della sottostringa.
 */
@@ -450,7 +437,7 @@ int isValidIpAddress ( char *ipAddress ) {
 	struct sockaddr_in test;
 	int res = inet_pton ( AF_INET, ipAddress, &( test.sin_addr ) );
 	if ( res != 1 )
-		error ( 0, EINVAL, "indirizzo ip non valido" );
+		error ( 0, EINVAL, "indirizzo ip non valido" ), res = -1;
 	return res;
 }
 

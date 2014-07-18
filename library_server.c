@@ -1,6 +1,14 @@
-﻿#include "library_server.h"
-#include <pthread.h>
+﻿/*=============================================================================
+  Nome: server.c
+  Autori:
+	MARCO CARROZZO     	N86/1240
+	MAURIZIO DEL PRETE 	N86/783
 
+	Progetto: Corriere Espresso
+  ===========================================================================*/
+
+#include "library_server.h"
+#include <pthread.h>
 
 /*inizializza il socket di comunicazione del server*/
 int InitServerSocket ( struct sockaddr_in *server, int port, int maxOperatorsQueue ) {
@@ -66,6 +74,7 @@ void connectionManager ( int sockfd, int opNumber, int kPackages, Package *handl
 
 	maxThread 		= 0;
 	clientsize 		= sizeof( struct sockaddr_in );
+	
 	char *mess00	= "Connessione accettata\n";
 	char *mess01	= "Thread assegnato\n";
 
@@ -111,12 +120,13 @@ void *thread_connection_handler ( void *parametri ) {
 	Package *			handler 		= tmp->handler;
 	int 				client_sock 	= tmp->sockfd;
 	int 				kPackages 		= tmp->kPackages;
-
+	char *				mess1 			= "nuova Init Terminata\n";
+	char *				mess2 			= "\nfine comunicazioni\n";
 	while ((threadClientInit ( client_sock, handler, kPackages )) == 0)
 		sleep (5);
-	write ( STDOUT_FILENO, "nuova Init Terminata\n", 15 );
+	write ( STDOUT_FILENO, mess1, strlen ( mess2 ) );
 	talkWithClient( client_sock, handler );
-	write ( STDOUT_FILENO, "\nfine comunicazioni\n", sizeof ( "\nfine comunicazioni\n" ) );	
+	write ( STDOUT_FILENO, mess2, strlen ( mess2 ) );
 	/*
 	all'uscita del thread, lo elimino dalla "coda" dei thread attivi e libero
 	uno slot per la connessione. impiego il mutex per poter scrivere sulla

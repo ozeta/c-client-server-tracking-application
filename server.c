@@ -1,7 +1,10 @@
 /*=============================================================================
   Nome: server.c
-  Autori: Marco Carrozzo, Maurizio Del Prete
-  Progetto: Corriere Espresso
+  Autori:
+	MARCO CARROZZO     	N86/1240
+	MAURIZIO DEL PRETE 	N86/783
+
+	Progetto: Corriere Espresso
   ===========================================================================*/
 
 /*
